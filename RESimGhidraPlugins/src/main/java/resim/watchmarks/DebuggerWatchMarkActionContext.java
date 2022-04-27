@@ -13,14 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-apply from: "$rootProject.projectDir/gradle/distributableGhidraExtension.gradle"
-apply from: "$rootProject.projectDir/gradle/javaProject.gradle"
-apply from: "$rootProject.projectDir/gradle/javaTestProject.gradle"
-apply from: "$rootProject.projectDir/gradle/helpProject.gradle"
-apply plugin: 'eclipse'
-eclipse.project.name = 'Xtra RESimGhidraPlugins'
+package resim.watchmarks;
 
+import java.awt.Component;
 
-dependencies {
-	api project(':Base')
+import docking.ActionContext;
+
+public class DebuggerWatchMarkActionContext extends ActionContext {
+
+	private final WatchMarksRow msg;
+
+	public DebuggerWatchMarkActionContext(DebuggerWatchMarksProvider provider, WatchMarksRow msg,
+			Component sourceComponent) {
+		super(provider, msg, sourceComponent);
+		this.msg = msg;
+	}
+
+	public WatchMarksRow getMsg() {
+		return msg;
+	}
 }

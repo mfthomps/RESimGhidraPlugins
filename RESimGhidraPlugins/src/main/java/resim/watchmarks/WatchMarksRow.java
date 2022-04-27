@@ -13,14 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-apply from: "$rootProject.projectDir/gradle/distributableGhidraExtension.gradle"
-apply from: "$rootProject.projectDir/gradle/javaProject.gradle"
-apply from: "$rootProject.projectDir/gradle/javaTestProject.gradle"
-apply from: "$rootProject.projectDir/gradle/helpProject.gradle"
-apply plugin: 'eclipse'
-eclipse.project.name = 'Xtra RESimGhidraPlugins'
+package resim.watchmarks;
 
 
-dependencies {
-	api project(':Base')
+import ghidra.program.model.address.Address;
+
+
+public class WatchMarksRow {
+
+
+	private final DebuggerWatchMarksProvider provider;
+
+	final String msg;
+	private int index;
+	Address pc;
+
+	public WatchMarksRow(DebuggerWatchMarksProvider provider, int index, String msg, Address pc) {
+		this.provider = provider;
+		this.msg = msg;
+		this.index = index;
+		this.pc = pc;
+	}
+
+
+
+	public int getIndex() {
+		return index;
+	}
+
+	public Address getProgramCounter() {
+		return pc;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
+
+
+
+	protected void update() {
+
+	}
 }
