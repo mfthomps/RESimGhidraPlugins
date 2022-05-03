@@ -20,6 +20,7 @@ import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
+import java.util.HashMap;
 import java.util.function.*;
 
 import javax.swing.*;
@@ -37,6 +38,7 @@ import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
 
 import ghidra.framework.plugintool.AutoService;
+import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
 import ghidra.program.model.address.Address;
@@ -48,6 +50,7 @@ import ghidra.trace.model.stack.TraceStackFrame;
 import ghidra.trace.model.thread.TraceThread;
 import ghidra.trace.util.TraceAddressSpace;
 import ghidra.trace.util.TraceRegisterUtils;
+import ghidra.util.Msg;
 import ghidra.util.Swing;
 import ghidra.util.table.GhidraTable;
 import ghidra.util.table.GhidraTableFilterPanel;
@@ -61,13 +64,17 @@ import agent.gdb.manager.impl.GdbManagerImpl;
 import ghidra.framework.plugintool.PluginTool;
 
 import resim.utils.RESimUtils;
+import resim.utils.Json;
 public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
+	GdbManagerImpl impl=null;
 
 	protected enum WatchMarksTableColumns
 		implements EnumeratedTableColumn<WatchMarksTableColumns, WatchMarksRow> {
 		INDEX("Index", Integer.class, WatchMarksRow::getIndex),
 		PC("PC", Address.class, WatchMarksRow::getProgramCounter),
-		MSG("Message", String.class, WatchMarksRow::getMsg);
+	    CYCLE("cycle", Long.class, WatchMarksRow::getCycle),
+		MSG("Message", String.class, WatchMarksRow::getMsg),
+	    PID("pid", Long.class, WatchMarksRow::getPid);
 
 		private final String header;
 		private final Function<WatchMarksRow, ?> getter;
@@ -168,18 +175,18 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 
 	protected final WatchMarksTableModel watchMarksTableModel = new WatchMarksTableModel();
 	protected GhidraTable watchMarksTable;
-	protected GhidraTableFilterPanel<WatchMarksRow> stackFilterPanel;
+	protected GhidraTableFilterPanel<WatchMarksRow> watchMarkFilterPanel;
 
 	private JPanel mainPanel = new JPanel(new BorderLayout());
 
 	private DebuggerWatchMarkActionContext myActionContext;
 	private RESimUtils resimUtils; 
 
-	public DebuggerWatchMarksProvider(DebuggerWatchMarksPlugin plugin) throws Exception {
+	public DebuggerWatchMarksProvider(DebuggerWatchMarksPlugin plugin)  {
 		super(plugin.getTool(), "WatchMarks", plugin.getName());
 		//this.plugin = plugin;
-	
-		resimUtils = new RESimUtils(plugin.getTool());
+	    PluginTool tool = plugin.getTool();
+
 		
 		this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
@@ -196,12 +203,24 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 		setVisible(true);
 		contextChanged();
 	}
-
+    protected void getRESimUtils() {
+	    resimUtils = null;
+	    
+	    List<Plugin> pluginList = tool.getManagedPlugins();
+	    for (Plugin p : pluginList) {
+	    	if(p.getClass() == RESimUtils.class) {
+	    		resimUtils = (RESimUtils) p;
+	    	}
+	    }
+	    if(resimUtils == null) {
+	    	Msg.error(this,  "Failed to find RESimUtils in tool");
+	    }
+    }
 	protected void buildMainPanel() {
 		watchMarksTable = new GhidraTable(watchMarksTableModel);
 		mainPanel.add(new JScrollPane(watchMarksTable));
-		stackFilterPanel = new GhidraTableFilterPanel<>(watchMarksTable, watchMarksTableModel);
-		mainPanel.add(stackFilterPanel, BorderLayout.SOUTH);
+		watchMarkFilterPanel = new GhidraTableFilterPanel<>(watchMarksTable, watchMarksTableModel);
+		mainPanel.add(watchMarkFilterPanel, BorderLayout.SOUTH);
 
 		watchMarksTable.getSelectionModel().addListSelectionListener(evt -> {
 			if (evt.getValueIsAdjusting()) {
@@ -222,11 +241,14 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 				if (myActionContext == null) {
 					return;
 				}
-				//Address pc = myActionContext.getFrame().getProgramCounter();
-				//if (pc == null) {
-				//	return;
-				//}
-				//listingService.goTo(pc, true);
+				int index = myActionContext.getRow().getIndex();
+				String cmd = "goToDataMark("+index+")";
+				try {
+					String result = resimUtils.doRESim(cmd, impl);
+				}catch(Exception error) {
+					error.printStackTrace();
+				}
+
 			}
 
 			@Override
@@ -253,7 +275,7 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 
 	@Override
 	public void contextChanged() {
-		WatchMarksRow row = stackFilterPanel.getSelectedItem();
+		WatchMarksRow row = watchMarkFilterPanel.getSelectedItem();
 		myActionContext =
 			row == null ? null : new DebuggerWatchMarkActionContext(this, row, watchMarksTable);
 		super.contextChanged();
@@ -316,30 +338,51 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 		this.mappingService = mappingService;
 
 	}
+	public void clear() {
+		watchMarksTableModel.clear();
+	}
 	public void add(WatchMarksRow row) {
 		watchMarksTableModel.add(row);
 	}
-	public void refresh() {
-		GdbManagerImpl impl=null;
+        public void add(HashMap<Object, Object> entry, int index){
+        	String msg = (String) entry.get("msg");
+            long ip = (long) entry.get("ip");
+            Address ip_addr = resimUtils.addr(ip);
+            long cycle = (long) entry.get("cycle");
+            long pid = (long) entry.get("pid");
+             WatchMarksRow wmr = new WatchMarksRow(this, index, msg, ip_addr, cycle, pid);
+             add(wmr); 
+        }
+	@SuppressWarnings("unchecked")
+	public void refresh() throws Exception {
+		if(resimUtils == null) {
+			Msg.out("call to get RESimUtils");
+			System.out.println("call to getRESimUtils");
+			getRESimUtils();
+		}
 		try {
 			impl = resimUtils.getGdbManager();
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} 
-        String cmd = "monitor @cgc.getWatchMarks()";
+		clear();
+        String cmd = "getWatchMarks()";
         //println("cmd is "+cmd);
-        CompletableFuture<String> future = impl.consoleCapture(cmd, CompletesWithRunning.CANNOT);
-        try {
-			String result = future.get();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
+        String watchString = resimUtils.doRESim(cmd, impl);
+        if(watchString == null) {
+        	throw new Exception("Failed to get watchMarks json from RESim");
+        }
+
+        Object watch_json = Json.getJson(watchString);
+        java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
+        int index = 0;
+        for(Object o : watchMarks){
+            HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
+            add(entry, index);
+            index++;
+        }
 	}
 	
 }

@@ -21,15 +21,15 @@ import docking.ActionContext;
 
 public class DebuggerWatchMarkActionContext extends ActionContext {
 
-	private final WatchMarksRow msg;
+	private final WatchMarksRow row;
 
-	public DebuggerWatchMarkActionContext(DebuggerWatchMarksProvider provider, WatchMarksRow msg,
+	public DebuggerWatchMarkActionContext(DebuggerWatchMarksProvider provider, WatchMarksRow row,
 			Component sourceComponent) {
-		super(provider, msg, sourceComponent);
-		this.msg = msg;
+		super(provider, row, sourceComponent);
+		this.row = row;
 	}
 
-	public WatchMarksRow getMsg() {
-		return msg;
+	public WatchMarksRow getRow() {
+		return row;
 	}
 }

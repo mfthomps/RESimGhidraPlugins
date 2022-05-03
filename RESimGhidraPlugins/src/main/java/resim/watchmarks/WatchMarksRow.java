@@ -18,7 +18,6 @@ package resim.watchmarks;
 
 import ghidra.program.model.address.Address;
 
-
 public class WatchMarksRow {
 
 
@@ -27,12 +26,16 @@ public class WatchMarksRow {
 	final String msg;
 	private int index;
 	Address pc;
+	long cycle;
+	long pid;
 
-	public WatchMarksRow(DebuggerWatchMarksProvider provider, int index, String msg, Address pc) {
+	public WatchMarksRow(DebuggerWatchMarksProvider provider, int index, String msg, Address pc, long cycle, long pid) {
 		this.provider = provider;
 		this.msg = msg;
 		this.index = index;
 		this.pc = pc;
+		this.cycle = cycle;
+		this.pid = pid;
 	}
 
 
@@ -48,7 +51,12 @@ public class WatchMarksRow {
 	public String getMsg() {
 		return msg;
 	}
-
+    public long getPid() {
+    	return pid;
+    }
+    public long getCycle() {
+    	return cycle;
+    }
 
 
 	protected void update() {

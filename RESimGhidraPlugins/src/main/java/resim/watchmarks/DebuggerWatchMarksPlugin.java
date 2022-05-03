@@ -48,6 +48,14 @@ public class DebuggerWatchMarksPlugin extends AbstractDebuggerPlugin {
 	protected void init() {
 		provider = new DebuggerWatchMarksProvider(this);
 		super.init();
+		/*
+		try {
+			provider = new DebuggerWatchMarksProvider(this);
+			super.init();
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		*/
 	}
 
 	@Override
