@@ -20,10 +20,22 @@ import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.dbg.DebuggerObjectModel;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
+import ghidra.app.script.GhidraScript;
+import ghidra.app.services.DebuggerStaticMappingService;
+import ghidra.app.services.DebuggerTraceManagerService;
+import ghidra.program.model.address.AddressSpace;
+import ghidra.program.util.ProgramLocation;
+import ghidra.trace.model.DefaultTraceLocation;
+import ghidra.trace.model.Trace;
+import ghidra.util.database.UndoableTransaction;
+
+import java.lang.Thread;
+import com.google.common.collect.Range;
 
 public class RESimUtils extends Plugin {
         private PluginTool tool;
         private Program program;
+        private GdbManagerImpl impl;
         /**
          * Plugin constructor - all plugins must have a constructor with this signature
          * @param tool the pluginTool that this plugin is added to.
@@ -33,28 +45,34 @@ public class RESimUtils extends Plugin {
                 this.tool = tool;
                 this.program = program;
                 tool.addPlugin(this);
+                this.impl = null;
         }
 
         public GdbManagerImpl getGdbManager() throws Exception {
-            DebuggerObjectsPlugin objects = 
-                (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
-            DebuggerModelService models = objects.modelService;
-            GdbModelImpl model = models.getModels()
-                .stream()
-                .filter(GdbModelImpl.class::isInstance)
-                .map(GdbModelImpl.class::cast)
-                .findFirst()
-                .orElse(null);
-            if (model == null) {
-            	Msg.info(this, "Failed to get GdbManager, model is null");
-                return null;
-            }
-            Field f = GdbModelImpl.class.getDeclaredField("gdb");
-            f.setAccessible(true);
-            GdbManagerImpl retval = (GdbManagerImpl) f.get(model);
-            if(retval == null) {
-            	Msg.info(this, "Failed to get GdbManager");
-            }
+        	GdbManagerImpl retval=null;
+        	if(impl == null) {
+	            DebuggerObjectsPlugin objects = 
+	                (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
+	            DebuggerModelService models = objects.modelService;
+	            GdbModelImpl model = models.getModels()
+	                .stream()
+	                .filter(GdbModelImpl.class::isInstance)
+	                .map(GdbModelImpl.class::cast)
+	                .findFirst()
+	                .orElse(null);
+	            if (model == null) {
+	            	Msg.info(this, "Failed to get GdbManager, model is null");
+	                return null;
+	            }
+	            Field f = GdbModelImpl.class.getDeclaredField("gdb");
+	            f.setAccessible(true);
+	            retval = (GdbManagerImpl) f.get(model);
+	            if(retval == null) {
+	            	Msg.info(this, "Failed to get GdbManager");
+	            }
+        	}else {
+        		retval = impl;
+        	}
             return retval;
         }
         private DebuggerObjectsProvider getDebuggerObjectsProvider() throws Exception {
@@ -87,6 +105,10 @@ public class RESimUtils extends Plugin {
     		AddressFactory addrFactory = this.program.getAddressFactory();
     		return addrFactory.getConstantAddress(addr);
     	}
+    	public String doRESim(String cmd) throws Exception{
+    		GdbManagerImpl myimpl = getGdbManager();
+    		return doRESim(cmd, myimpl);
+    	}
     	public String doRESim(String cmd, GdbManagerImpl impl) throws Exception {
     		String retval = null;
     		String full_cmd = "monitor @cgc."+cmd;
@@ -105,7 +127,71 @@ public class RESimUtils extends Plugin {
             if(retval != null) {
             	refreshClient();
             }
+            Msg.info(this,  "Done with doRESim");
             return retval;
     	}
+        protected void doMapping(Long start, Long end) throws Exception{
+            Msg.debug(this,"in doMapping\n");
+            Long length = end - start;
+            DebuggerStaticMappingService mappings =
+                    tool.getService(DebuggerStaticMappingService.class);
+            DebuggerTraceManagerService traces =
+                    tool.getService(DebuggerTraceManagerService.class);
 
+            Trace currentTrace = null;
+            int failcount = 0;
+            while(currentTrace == null){
+                currentTrace = traces.getCurrentTrace();
+                if(currentTrace == null){
+                	Msg.debug(this,"no current trace, wait a sec");
+                    Thread.sleep(1000);
+                    failcount++;
+                    if(failcount > 10){
+                        return;
+                    }
+                }
+            }
+            AddressSpace dynRam = currentTrace.getBaseAddressFactory().getDefaultAddressSpace();
+            AddressSpace statRam = program.getAddressFactory().getDefaultAddressSpace();
+
+            try (UndoableTransaction tid =
+                    UndoableTransaction.start(currentTrace, "Add Mapping", true)) {
+                    mappings.addMapping(
+                            new DefaultTraceLocation(currentTrace, null, Range.atLeast(0L),
+                                    dynRam.getAddress(start)),
+                            new ProgramLocation(program, statRam.getAddress(start)),
+                            length, false);
+            }
+            Msg.debug(this,"did mapping for start "+String.format("0x%08X", start)+" length "+length);
+    }
+        protected void parseSO(String all_string){
+            Msg.debug(this,"in parseSO\n");
+            Object obj = Json.getJson(all_string);
+            if(obj == null){
+            	Msg.debug(this,"Error getting json of somap");
+                return;
+            }
+            java.util.HashMap<Object, Object> somap = (java.util.HashMap<Object, Object>) obj;
+
+            Msg.debug(this,"did hash parseSO\n");
+            Msg.debug(this,"size of hashmap is "+ somap.size());
+
+            Long pid_o = (Long) somap.get("group_leader");
+            Msg.debug(this,"in parseSO pid_o is "+pid_o);
+            Long start = (Long) somap.get("prog_start");
+            Long end = (Long) somap.get("prog_end");
+            try{
+                doMapping(start, end);
+                Msg.debug(this,"did call doMapping");
+            }catch(java.lang.Exception e){
+            	Msg.debug(this,"Error thrown by doMapping\n"+e.toString());
+                e.printStackTrace();
+            }
+        }
+        public void doMapping() throws Exception{
+            String cmd = "getSOMap()";
+            String soJson = doRESim(cmd);
+            parseSO(soJson);
+
+        }
 }

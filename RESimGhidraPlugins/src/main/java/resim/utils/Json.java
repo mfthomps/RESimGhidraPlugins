@@ -8,7 +8,7 @@ public class Json {
             int start_dict = all_string.indexOf('{');
             int start_list = all_string.indexOf('[');
             if(start_dict < 0 && start_list < 0){
-                Msg.info(null, "Error, failed to get SO json");
+                Msg.info(null, "Error, failed to get json from \n"+all_string);
                 return null;
             }
             String jstring = null;
@@ -17,10 +17,10 @@ public class Json {
                 jstring = all_string.substring(start_list, end);
         	
             }else if(start_list < 0 || start_dict < start_list) {
-            	int end = all_string.lastIndexOf('}');
+            	int end = all_string.lastIndexOf('}')+1;
                 jstring = all_string.substring(start_dict, end);
             }
-            //println("in getJson string "+jstring);
+            Msg.info(null, "in getJson string "+jstring);
             char[] console_char = jstring.toCharArray();
                 JSONParser parser = new JSONParser();
                 List<Object> objs = new ArrayList<Object>();
@@ -47,11 +47,11 @@ public class Json {
                 	Msg.error(null,"invalid json input");
                         return null;
                 }
-                Msg.error(null,"len of tokens is "+tokens.size());
+                Msg.debug(null,"len of tokens is "+tokens.size());
                 JSONParser parser2 = new JSONParser();
                 // Ghidra json parser does not let you reset internal ndx value; so hack is to create a 2nd parser.
                 Object obj = parser2.convert(console_char, tokens);
-                Msg.error(null,"returning obj from getJson len of objs is ");
+                //Msg.debug(null,"returning obj from getJson len of objs is ");
                 return obj;
         }
 }
