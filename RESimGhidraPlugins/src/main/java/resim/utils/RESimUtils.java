@@ -102,8 +102,9 @@ public class RESimUtils extends Plugin {
 	        dbo.refresh();
         }
     	public Address addr(long addr) {
-    		AddressFactory addrFactory = this.program.getAddressFactory();
-    		return addrFactory.getConstantAddress(addr);
+    		// Get an address in the program memory space.
+            AddressSpace statRam = program.getAddressFactory().getDefaultAddressSpace();
+            return statRam.getAddress(addr);
     	}
     	public String doRESim(String cmd) throws Exception{
     		GdbManagerImpl myimpl = getGdbManager();

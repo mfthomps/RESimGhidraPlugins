@@ -20,7 +20,7 @@ public class Json {
             	int end = all_string.lastIndexOf('}')+1;
                 jstring = all_string.substring(start_dict, end);
             }
-            Msg.info(null, "in getJson string "+jstring);
+            //Msg.info(null, "in getJson string "+jstring);
             char[] console_char = jstring.toCharArray();
                 JSONParser parser = new JSONParser();
                 List<Object> objs = new ArrayList<Object>();
