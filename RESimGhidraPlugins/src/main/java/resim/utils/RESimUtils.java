@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
+import ghidra.app.plugin.core.function.RecentlyUsedAction;
 import ghidra.app.services.DebuggerModelService;
 
 
@@ -36,6 +37,13 @@ public class RESimUtils extends Plugin {
         private PluginTool tool;
         private Program program;
         private GdbManagerImpl impl;
+    	public final static String RESIM_MENU_SUBGROUP = "RESim";
+    	public final static String RESIM_MENU_PULLRIGHT = "RESim";
+    	public final static String RESIM_SUBGROUP_MIDDLE = "M_Middle";
+    	public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
+    	private RevToCursorAction revToCursorAction;
+
+
         /**
          * Plugin constructor - all plugins must have a constructor with this signature
          * @param tool the pluginTool that this plugin is added to.
@@ -46,6 +54,8 @@ public class RESimUtils extends Plugin {
                 this.program = program;
                 tool.addPlugin(this);
                 this.impl = null;
+        		createActions();
+
         }
 
         public GdbManagerImpl getGdbManager() throws Exception {
@@ -195,4 +205,13 @@ public class RESimUtils extends Plugin {
             parseSO(soJson);
 
         }
+    	private void createActions() {
+
+
+    		// we want to put all function pull-right menus in the same group
+    		tool.setMenuGroup(new String[] { RESIM_MENU_PULLRIGHT }, RESIM_MENU_SUBGROUP,
+    			RESIM_SUBGROUP_MIDDLE);
+    		revToCursorAction = new RevToCursorAction("Rev to Cursor", this);
+    		tool.addAction(revToCursorAction);
+    	}
 }
