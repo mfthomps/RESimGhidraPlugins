@@ -22,6 +22,7 @@ import ghidra.app.plugin.core.debug.event.TraceActivatedPluginEvent;
 import ghidra.app.plugin.core.debug.event.TraceClosedPluginEvent;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import ghidra.util.Msg;
 
 @PluginInfo( //
 		shortDescription = "Debugger RESim stack trace", //
@@ -42,10 +43,14 @@ public class DebuggerREStackPlugin extends AbstractDebuggerPlugin {
 
 	public DebuggerREStackPlugin(PluginTool tool) {
 		super(tool);
+		Msg.info(this,  "HEREHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHhh");
+		init();
+
 	}
 
 	@Override
 	protected void init() {
+		Msg.info(this,  "IN stack plugin");
 		provider = new DebuggerREStackProvider(this);
 		super.init();
 		/*

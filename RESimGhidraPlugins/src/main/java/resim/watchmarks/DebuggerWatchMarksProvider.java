@@ -65,7 +65,8 @@ import ghidra.framework.plugintool.PluginTool;
 
 import resim.utils.RESimUtils;
 import resim.utils.Json;
-public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
+import resim.utils.RESimProvider;
+public class DebuggerWatchMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 	GdbManagerImpl impl=null;
 
 	protected enum WatchMarksTableColumns
@@ -232,6 +233,9 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 		watchMarksTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
+				if (e.getButton() == MouseEvent.BUTTON2) {
+					Msg.info(this,  "right click");
+				}
 				if (e.getClickCount() < 2 || e.getButton() != MouseEvent.BUTTON1) {
 					return;
 				}
@@ -244,7 +248,7 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter {
 				int index = myActionContext.getRow().getIndex();
 				String cmd = "goToDataMark("+index+")";
 				try {
-					String result = resimUtils.doRESim(cmd, impl);
+					String result = resimUtils.doRESimRefresh(cmd, impl);
 				}catch(Exception error) {
 					error.printStackTrace();
 				}

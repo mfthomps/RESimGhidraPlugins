@@ -54,18 +54,16 @@ import ghidra.util.Msg;
 import ghidra.util.Swing;
 import ghidra.util.table.GhidraTable;
 import ghidra.util.table.GhidraTableFilterPanel;
-import utilities.util.SuppressableCallback;
-import utilities.util.SuppressableCallback.Suppression;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
-import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.manager.impl.GdbManagerImpl;
 import ghidra.framework.plugintool.PluginTool;
+import ghidra.program.model.listing.Program;
 
 import resim.utils.RESimUtils;
 import resim.utils.Json;
-public class DebuggerREStackProvider extends ComponentProviderAdapter {
+import resim.utils.RESimProvider;
+
+public class DebuggerREStackProvider extends ComponentProviderAdapter implements RESimProvider{
 	GdbManagerImpl impl=null;
 
 	protected enum REStackTableColumns
@@ -203,10 +201,16 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter {
 
 		setVisible(true);
 		contextChanged();
+		
+
+		Msg.debug(this, "call to get RESimUtils from REStack");
+		getRESimUtils();
+		resimUtils.registerRefresh(this);
+
 	}
     protected void getRESimUtils() {
 	    resimUtils = null;
-	    
+	    Program program = null;
 	    List<Plugin> pluginList = tool.getManagedPlugins();
 	    for (Plugin p : pluginList) {
 	    	if(p.getClass() == RESimUtils.class) {
@@ -214,7 +218,13 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter {
 	    	}
 	    }
 	    if(resimUtils == null) {
-	    	Msg.error(this,  "Failed to find RESimUtils in tool");
+	    	try {
+				resimUtils = new RESimUtils(tool, program);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+		    	Msg.error(this,  "Failed to find RESimUtils in tool");
+			}
 	    }
     }
 	protected void buildMainPanel() {
@@ -356,12 +366,8 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter {
         }
 	@SuppressWarnings("unchecked")
 	public void refresh() throws Exception {
-		Msg.info(this,  "HERE*******************************************************************");
-		if(resimUtils == null) {
-			Msg.debug(this, "call to get RESimUtils from REStack");
-			System.out.println("call to getRESimUtils");
-			getRESimUtils();
-		}
+		Msg.info(this,  "refresh*******************************************************************");
+
 		try {
 			impl = resimUtils.getGdbManager();
 		} catch (Exception e1) {

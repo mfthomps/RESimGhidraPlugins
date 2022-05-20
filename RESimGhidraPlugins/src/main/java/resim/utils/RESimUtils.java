@@ -7,6 +7,7 @@ import agent.gdb.model.impl.GdbModelImpl;
 import java.lang.reflect.Field;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.ArrayList;
 
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
@@ -21,7 +22,6 @@ import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.dbg.DebuggerObjectModel;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
-import ghidra.app.script.GhidraScript;
 import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.program.model.address.AddressSpace;
@@ -29,6 +29,9 @@ import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.DefaultTraceLocation;
 import ghidra.trace.model.Trace;
 import ghidra.util.database.UndoableTransaction;
+import resim.restack.DebuggerREStackProvider;
+import resim.restack.DebuggerREStackPlugin;
+import resim.watchmarks.DebuggerWatchMarksProvider;
 
 import java.lang.Thread;
 import com.google.common.collect.Range;
@@ -42,7 +45,7 @@ public class RESimUtils extends Plugin {
     	public final static String RESIM_SUBGROUP_MIDDLE = "M_Middle";
     	public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
     	private RevToCursorAction revToCursorAction;
-
+    	private ArrayList<RESimProvider> refreshProviders;
 
         /**
          * Plugin constructor - all plugins must have a constructor with this signature
@@ -54,8 +57,12 @@ public class RESimUtils extends Plugin {
                 this.program = program;
                 tool.addPlugin(this);
                 this.impl = null;
+                Msg.info(this,  "in resimutils plugin");
         		createActions();
-
+        		refreshProviders = new ArrayList<RESimProvider>();
+        		if(program != null) {
+        			loadOtherPlugins();
+        		}
         }
 
         public GdbManagerImpl getGdbManager() throws Exception {
@@ -110,6 +117,9 @@ public class RESimUtils extends Plugin {
 	        object_model.invalidateAllLocalCaches();
 	        DebuggerObjectsProvider dbo = getDebuggerObjectsProvider();
 	        dbo.refresh();
+	        for(RESimProvider provider : refreshProviders) {
+	        	provider.refresh();
+	        }
         }
     	public Address addr(long addr) {
     		// Get an address in the program memory space.
@@ -119,6 +129,13 @@ public class RESimUtils extends Plugin {
     	public String doRESim(String cmd) throws Exception{
     		GdbManagerImpl myimpl = getGdbManager();
     		return doRESim(cmd, myimpl);
+    	}
+    	public String doRESimRefresh(String cmd, GdbManagerImpl impl) throws Exception {
+    		String retval = doRESim(cmd, impl);
+    		if(retval != null) {
+    			refreshClient();
+    		}
+    		return retval;
     	}
     	public String doRESim(String cmd, GdbManagerImpl impl) throws Exception {
     		String retval = null;
@@ -135,9 +152,7 @@ public class RESimUtils extends Plugin {
     			e.printStackTrace();
     			throw new Exception("Failed to resim command, execution exception:"+cmd);
     		}
-            if(retval != null) {
-            	refreshClient();
-            }
+            
             Msg.info(this,  "Done with doRESim");
             return retval;
     	}
@@ -203,6 +218,7 @@ public class RESimUtils extends Plugin {
             String cmd = "getSOMap()";
             String soJson = doRESim(cmd);
             parseSO(soJson);
+    		loadOtherPlugins();
 
         }
     	private void createActions() {
@@ -214,4 +230,44 @@ public class RESimUtils extends Plugin {
     		revToCursorAction = new RevToCursorAction("Rev to Cursor", this);
     		tool.addAction(revToCursorAction);
     	}
+    	public void registerRefresh(RESimProvider provider) {
+    		refreshProviders.add(provider);
+    	}
+    	public void setProgram(Program program) {
+    		this.program = program;
+        }
+    	private void loadOtherPlugins() {
+    		// TBD, what does it take to get ghidra to load these?  it loads watchmarks...
+            Msg.info(this,"loadOtherplugsin here goes");
+            DebuggerREStackProvider dmp = (DebuggerREStackProvider) tool.getComponentProvider("REStack");
+            if(dmp == null){
+                Msg.info(this, dmp);
+                DebuggerREStackPlugin plug = new DebuggerREStackPlugin(tool);
+                dmp = (DebuggerREStackProvider) tool.getComponentProvider("REStack");
+                if(dmp == null){
+                    Msg.info(this, "is still potato");
+                    return;
+                }
+            }
+            try {
+				dmp.refresh();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            DebuggerWatchMarksProvider dwp = (DebuggerWatchMarksProvider) tool.getComponentProvider("WatchMarks");
+            if(dwp == null){
+                Msg.info(this, "watchmarks is potato");
+                return;
+            }
+            try {
+				dwp.refresh();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+
+    	}
+    	
 }

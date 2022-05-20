@@ -22,6 +22,7 @@ import ghidra.app.plugin.core.debug.event.TraceActivatedPluginEvent;
 import ghidra.app.plugin.core.debug.event.TraceClosedPluginEvent;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import ghidra.util.Msg;
 
 @PluginInfo( //
 		shortDescription = "Debugger watch marks", //
@@ -46,6 +47,7 @@ public class DebuggerWatchMarksPlugin extends AbstractDebuggerPlugin {
 
 	@Override
 	protected void init() {
+		Msg.info(this,  "watch marks plugin init");
 		provider = new DebuggerWatchMarksProvider(this);
 		super.init();
 		/*
