@@ -34,7 +34,7 @@ import ghidra.util.Msg;
  */
 class RevToCursorAction extends ListingContextAction {
 	/** the plugin associated with this action. */
-    RESimUtils plugin;
+    DebuggerRESimUtilsPlugin plugin;
 
 
 
@@ -45,15 +45,15 @@ class RevToCursorAction extends ListingContextAction {
 	 * @param resimUtils does checking for this action
 
 	 */
-	public RevToCursorAction(String name, RESimUtils plugin) {
+	public RevToCursorAction(String name, DebuggerRESimUtilsPlugin plugin) {
 		super(name, plugin.getName());
         this.plugin = plugin;
 
 
 			// top-level item usable most places
 			setPopupMenuData(
-				new MenuData(new String[] { name }, null, RESimUtils.RESIM_MENU_SUBGROUP,
-					MenuData.NO_MNEMONIC, RESimUtils.RESIM_SUBGROUP_BEGINNING));
+				new MenuData(new String[] { name }, null, DebuggerRESimUtilsPlugin.RESIM_MENU_SUBGROUP,
+					MenuData.NO_MNEMONIC, DebuggerRESimUtilsPlugin.RESIM_SUBGROUP_BEGINNING));
 
 
 		setEnabled(true);

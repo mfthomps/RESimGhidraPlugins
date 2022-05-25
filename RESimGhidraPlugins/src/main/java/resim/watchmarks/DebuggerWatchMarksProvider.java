@@ -16,11 +16,12 @@
 package resim.watchmarks;
 
 import java.awt.BorderLayout;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
-import java.util.HashMap;
 import java.util.function.*;
 
 import javax.swing.*;
@@ -42,7 +43,7 @@ import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
 import ghidra.program.model.address.Address;
-
+import ghidra.program.model.listing.Program;
 import ghidra.trace.model.*;
 
 import ghidra.trace.model.stack.TraceStack;
@@ -63,7 +64,7 @@ import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.manager.impl.GdbManagerImpl;
 import ghidra.framework.plugintool.PluginTool;
 
-import resim.utils.RESimUtils;
+import resim.utils.DebuggerRESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 public class DebuggerWatchMarksProvider extends ComponentProviderAdapter implements RESimProvider{
@@ -181,7 +182,7 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 	private JPanel mainPanel = new JPanel(new BorderLayout());
 
 	private DebuggerWatchMarkActionContext myActionContext;
-	private RESimUtils resimUtils; 
+	private DebuggerRESimUtilsPlugin resimUtils; 
 
 	public DebuggerWatchMarksProvider(DebuggerWatchMarksPlugin plugin)  {
 		super(plugin.getTool(), "WatchMarks", plugin.getName());
@@ -195,7 +196,7 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		setIcon(DebuggerResources.ICON_PROVIDER_STACK);
 		setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
 		setWindowMenuGroup(DebuggerPluginPackage.NAME);
-
+        Msg.debug(this,  "did set window");
 		buildMainPanel();
 
 		setDefaultWindowPosition(WindowPosition.BOTTOM);
@@ -204,17 +205,19 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		setVisible(true);
 		contextChanged();
 	}
+
     protected void getRESimUtils() {
 	    resimUtils = null;
-	    
+	    Program program = null;
 	    List<Plugin> pluginList = tool.getManagedPlugins();
 	    for (Plugin p : pluginList) {
-	    	if(p.getClass() == RESimUtils.class) {
-	    		resimUtils = (RESimUtils) p;
+	    	if(p.getClass() == DebuggerRESimUtilsPlugin.class) {
+	    		resimUtils = (DebuggerRESimUtilsPlugin) p;
 	    	}
 	    }
+
 	    if(resimUtils == null) {
-	    	Msg.error(this,  "Failed to find RESimUtils in tool");
+	    	Msg.error(this,  "No resimUtils, bail");
 	    }
     }
 	protected void buildMainPanel() {
@@ -359,10 +362,15 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
         }
 	@SuppressWarnings("unchecked")
 	public void refresh() throws Exception {
+		Msg.debug(this, "refresh watchmarks");
 		if(resimUtils == null) {
 			Msg.out("call to get RESimUtils");
 			System.out.println("call to getRESimUtils");
 			getRESimUtils();
+		}
+		if(resimUtils == null) {
+			Msg.error(this,  "Cannot refresh, no RESimUtils");
+			return;
 		}
 		try {
 			impl = resimUtils.getGdbManager();

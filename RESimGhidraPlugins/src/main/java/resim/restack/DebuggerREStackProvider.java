@@ -59,7 +59,7 @@ import agent.gdb.manager.impl.GdbManagerImpl;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 
-import resim.utils.RESimUtils;
+import resim.utils.DebuggerRESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 
@@ -179,7 +179,7 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 	private JPanel mainPanel = new JPanel(new BorderLayout());
 
 	private DebuggerREStackActionContext myActionContext;
-	private RESimUtils resimUtils; 
+	private DebuggerRESimUtilsPlugin resimUtils; 
 
 	public DebuggerREStackProvider(DebuggerREStackPlugin plugin)  {
 		super(plugin.getTool(), "REStack", plugin.getName());
@@ -194,6 +194,7 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 		setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
 		setWindowMenuGroup(DebuggerPluginPackage.NAME);
 
+		Msg.debug(this, "call buildMainPanel");
 		buildMainPanel();
 
 		setDefaultWindowPosition(WindowPosition.BOTTOM);
@@ -205,7 +206,11 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 
 		Msg.debug(this, "call to get RESimUtils from REStack");
 		getRESimUtils();
-		resimUtils.registerRefresh(this);
+		if(resimUtils == null) {
+			Msg.error(this,  "Failed to get resimUtils");
+		}else {
+			resimUtils.registerRefresh(this);
+		}
 
 	}
     protected void getRESimUtils() {
@@ -213,18 +218,15 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 	    Program program = null;
 	    List<Plugin> pluginList = tool.getManagedPlugins();
 	    for (Plugin p : pluginList) {
-	    	if(p.getClass() == RESimUtils.class) {
-	    		resimUtils = (RESimUtils) p;
+	    	if(p.getClass() == DebuggerRESimUtilsPlugin.class) {
+	    		resimUtils = (DebuggerRESimUtilsPlugin) p;
+	    		break;
 	    	}
 	    }
 	    if(resimUtils == null) {
-	    	try {
-				resimUtils = new RESimUtils(tool, program);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+
 		    	Msg.error(this,  "Failed to find RESimUtils in tool");
-			}
+			
 	    }
     }
 	protected void buildMainPanel() {
@@ -366,8 +368,11 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
         }
 	@SuppressWarnings("unchecked")
 	public void refresh() throws Exception {
-		Msg.info(this,  "refresh*******************************************************************");
-
+		Msg.info(this,  "refresh");
+        if(resimUtils == null) {
+        	Msg.error(this,  "refresh failed, resimUtilsis null");
+        	return;
+        }
 		try {
 			impl = resimUtils.getGdbManager();
 		} catch (Exception e1) {

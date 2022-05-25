@@ -3,19 +3,27 @@ package resim.utils;
 import agent.gdb.manager.impl.GdbManagerImpl;
 import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.model.impl.GdbModelImpl;
+import docking.action.builder.ActionBuilder;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.ArrayList;
 
+import ghidra.app.plugin.PluginCategoryNames;
+import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
+import ghidra.app.plugin.core.debug.event.TraceActivatedPluginEvent;
+import ghidra.app.plugin.core.debug.event.TraceClosedPluginEvent;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
 import ghidra.app.plugin.core.function.RecentlyUsedAction;
+import ghidra.app.services.BlockModelService;
 import ghidra.app.services.DebuggerModelService;
 
 
 import ghidra.framework.plugintool.*;
+import ghidra.framework.plugintool.util.PluginException;
+import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
@@ -24,6 +32,7 @@ import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
 import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.services.DebuggerTraceManagerService;
+import ghidra.app.services.GraphDisplayBroker;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.DefaultTraceLocation;
@@ -33,10 +42,24 @@ import resim.restack.DebuggerREStackProvider;
 import resim.restack.DebuggerREStackPlugin;
 import resim.watchmarks.DebuggerWatchMarksProvider;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.Thread;
 import com.google.common.collect.Range;
-
-public class RESimUtils extends Plugin {
+@PluginInfo( //
+		shortDescription = "RESim Utils", //
+		description = "Manage RESim utils", //
+		category = PluginCategoryNames.DEBUGGER, //
+		packageName = DebuggerPluginPackage.NAME, //
+		status = PluginStatus.RELEASED, //
+		eventsConsumed = {
+			TraceActivatedPluginEvent.class, //
+			TraceClosedPluginEvent.class, //
+		}, //
+		servicesRequired = { //
+		} // 
+)
+public class DebuggerRESimUtilsPlugin extends Plugin {
         private PluginTool tool;
         private Program program;
         private GdbManagerImpl impl;
@@ -46,25 +69,51 @@ public class RESimUtils extends Plugin {
     	public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
     	private RevToCursorAction revToCursorAction;
     	private ArrayList<RESimProvider> refreshProviders;
-
+    	public final static String MENU_RESIM = "&RESim";
+    	protected DebuggerRESimUtilsProvider provider;
+ 
         /**
          * Plugin constructor - all plugins must have a constructor with this signature
          * @param tool the pluginTool that this plugin is added to.
          */
-        public RESimUtils(PluginTool tool, Program program) throws Exception{
+        public DebuggerRESimUtilsPlugin(PluginTool tool){
                 super(tool);
                 this.tool = tool;
-                this.program = program;
-                tool.addPlugin(this);
+                this.program = null;
                 this.impl = null;
                 Msg.info(this,  "in resimutils plugin");
-        		createActions();
+        		//createActions();
         		refreshProviders = new ArrayList<RESimProvider>();
+                Msg.info(this,  "did providers refresh");
+
         		if(program != null) {
+        			Msg.info(this,  "Constructor defined refreshProviders, load other plugins");
         			loadOtherPlugins();
+        		}else {
+        			Msg.info(this, "Constructor, program is null");
         		}
         }
+    	@Override
+    	protected void init() {
+    		Msg.info(this,  "in init");
+    		provider = new DebuggerRESimUtilsProvider(this);
 
+    		createActions();
+
+
+    	}
+    	public static String getExceptString(Exception e) {
+			  StringWriter sw = new StringWriter();
+			  e.printStackTrace(new PrintWriter(sw));
+			  String stackTrace = sw.toString();
+			  return stackTrace;
+    	}
+        protected void firstFun() {
+        	
+        }
+        protected void secondFun() {
+        	
+        }
         public GdbManagerImpl getGdbManager() throws Exception {
         	GdbManagerImpl retval=null;
         	if(impl == null) {
@@ -229,11 +278,25 @@ public class RESimUtils extends Plugin {
     			RESIM_SUBGROUP_MIDDLE);
     		revToCursorAction = new RevToCursorAction("Rev to Cursor", this);
     		tool.addAction(revToCursorAction);
+    		
+    		tool.setMenuGroup(new String[] { MENU_RESIM, "first" }, "first", "second");
+        	new ActionBuilder("Graph To/From Data References", getName())
+				.menuPath(MENU_RESIM, "Data", "To/From &References")
+				.menuGroup(MENU_RESIM, "Data")
+				.onAction(c -> firstFun())
+				.buildAndInstall(tool);
+
+			new ActionBuilder("Graph To Data References", getName())
+					.menuPath(MENU_RESIM, "Data", "&To References")
+					.menuGroup(MENU_RESIM, "Data")
+					.onAction(c -> secondFun())
+					.buildAndInstall(tool);
     	}
     	public void registerRefresh(RESimProvider provider) {
     		refreshProviders.add(provider);
     	}
     	public void setProgram(Program program) {
+    		Msg.debug(this,  "setProgram");
     		this.program = program;
         }
     	private void loadOtherPlugins() {
@@ -241,19 +304,13 @@ public class RESimUtils extends Plugin {
             Msg.info(this,"loadOtherplugsin here goes");
             DebuggerREStackProvider dmp = (DebuggerREStackProvider) tool.getComponentProvider("REStack");
             if(dmp == null){
-                Msg.info(this, dmp);
-                DebuggerREStackPlugin plug = new DebuggerREStackPlugin(tool);
-                dmp = (DebuggerREStackProvider) tool.getComponentProvider("REStack");
-                if(dmp == null){
-                    Msg.info(this, "is still potato");
-                    return;
-                }
+            	Msg.error(this,  "failed to get REStackProvider");
+            	return;
             }
             try {
 				dmp.refresh();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Msg.error(this, getExceptString(e));
 			}
             DebuggerWatchMarksProvider dwp = (DebuggerWatchMarksProvider) tool.getComponentProvider("WatchMarks");
             if(dwp == null){
@@ -263,11 +320,26 @@ public class RESimUtils extends Plugin {
             try {
 				dwp.refresh();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Msg.error(this, getExceptString(e));
 			}
 
 
     	}
-    	
+    	@Override
+    	protected void dispose() {
+    		tool.removeComponentProvider(provider);
+    	}
+
+    	@Override
+    	public void processEvent(PluginEvent event) {
+    		super.processEvent(event);
+    		if (event instanceof TraceActivatedPluginEvent) {
+    			TraceActivatedPluginEvent ev = (TraceActivatedPluginEvent) event;
+    			if(provider != null) {
+    				provider.coordinatesActivated(ev.getActiveCoordinates());
+    			}else {
+    				Msg.debug(this,  "Process event, no proder yet, "+ev.getToolEventName());
+    			}
+    		}
+    	}
 }

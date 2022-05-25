@@ -15,6 +15,8 @@
  */
 package resim.watchmarks;
 
+import java.util.List;
+
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.debug.AbstractDebuggerPlugin;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
@@ -22,7 +24,9 @@ import ghidra.app.plugin.core.debug.event.TraceActivatedPluginEvent;
 import ghidra.app.plugin.core.debug.event.TraceClosedPluginEvent;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
+import resim.utils.DebuggerRESimUtilsPlugin;
 
 @PluginInfo( //
 		shortDescription = "Debugger watch marks", //
@@ -49,6 +53,7 @@ public class DebuggerWatchMarksPlugin extends AbstractDebuggerPlugin {
 	protected void init() {
 		Msg.info(this,  "watch marks plugin init");
 		provider = new DebuggerWatchMarksProvider(this);
+		provider.getRESimUtils();
 		super.init();
 		/*
 		try {

@@ -317,53 +317,12 @@
 			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Framework-AsyncComm"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features DebugUtils"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgmodel"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger"/>
-	<classpathentry kind="src" path="/Framework Help">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Docking">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Generic">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Utility">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Features Base">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework SoftwareModeling">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Graph">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Project">
+	<classpathentry kind="src" path="/Debug Framework-Debugging"/>
+	<classpathentry kind="src" path="/Debug Debugger-agent-gdb"/>
+	<classpathentry kind="src" path="/Debug Framework-TraceModeling"/>
+	<classpathentry kind="src" path="/Debug ProposedUtils"/>
+	<classpathentry kind="src" path="/Debug Debugger"/>
+	<classpathentry kind="src" path="/Framework DB">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="without_test_code" value="true"/>
@@ -375,16 +334,54 @@
 			<attribute name="without_test_code" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="/Framework DB">
+	<classpathentry kind="src" path="/Framework Project">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="without_test_code" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgmodel-traceloader"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Framework-Debugging"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Framework-TraceModeling"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug ProposedUtils"/>
+	<classpathentry kind="src" path="/Framework Graph">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework SoftwareModeling">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Features Base">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework Utility">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework Generic">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework Docking">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework Help">
+		<attributes>
+			<attribute name="test" value="false"/>
+			<attribute name="without_test_code" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry combineaccessrules="false" kind="src" path="/_GhidraDocs"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/_Integration Test"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/_JsonDoclet"/>
@@ -392,14 +389,17 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/_Skeleton"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug AnnotationValidator"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgeng"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgmodel"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgmodel-traceloader"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-frida"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-gdb"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-lldb"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-gadp"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-jpda"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-swig-lldb"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Debug Framework-AsyncComm"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features BytePatterns"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features ByteViewer"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Features DebugUtils"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features Decompiler"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features DecompilerDependent"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features FileFormats"/>
@@ -420,6 +420,7 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/Features Recognizers"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features SourceCodeLookup"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Features VersionTracking"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/GhidraScripts"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/GPL DMG"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Processors 68000"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Processors 8051"/>
