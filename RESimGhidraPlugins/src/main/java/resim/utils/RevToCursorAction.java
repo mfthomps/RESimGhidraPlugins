@@ -82,7 +82,7 @@ class RevToCursorAction extends ListingContextAction {
         long addr = entry.getOffset();
         String cmd = "revToAddr("+addr+")";
         try {
-			plugin.doRESim(cmd);
+			plugin.doRESimRefresh(cmd);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package resim.watchmarks;
+package resim.bookmarks;
 
 import java.util.List;
 
@@ -29,8 +29,8 @@ import ghidra.util.Msg;
 import resim.utils.DebuggerRESimUtilsPlugin;
 
 @PluginInfo( //
-		shortDescription = "Debugger watch marks", //
-		description = "GUI to list watch marks", //
+		shortDescription = "Debugger book marks", //
+		description = "GUI to list book marks", //
 		category = PluginCategoryNames.DEBUGGER, //
 		packageName = DebuggerPluginPackage.NAME, //
 		status = PluginStatus.RELEASED, //
@@ -41,18 +41,18 @@ import resim.utils.DebuggerRESimUtilsPlugin;
 		servicesRequired = { //
 		} // 
 )
-public class DebuggerWatchMarksPlugin extends AbstractDebuggerPlugin {
+public class DebuggerBookMarksPlugin extends AbstractDebuggerPlugin {
 
-	protected DebuggerWatchMarksProvider provider;
+	protected DebuggerBookMarksProvider provider;
 
-	public DebuggerWatchMarksPlugin(PluginTool tool) {
+	public DebuggerBookMarksPlugin(PluginTool tool) {
 		super(tool);
 	}
 
 	@Override
 	protected void init() {
-		Msg.info(this,  "watch marks plugin init");
-		provider = new DebuggerWatchMarksProvider(this);
+		Msg.info(this,  "book marks plugin init");
+		provider = new DebuggerBookMarksProvider(this);
 		super.init();
 		/*
 		try {

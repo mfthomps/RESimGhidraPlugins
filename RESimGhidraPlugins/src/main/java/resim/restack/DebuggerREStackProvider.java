@@ -55,7 +55,6 @@ import ghidra.util.Swing;
 import ghidra.util.table.GhidraTable;
 import ghidra.util.table.GhidraTableFilterPanel;
 
-import agent.gdb.manager.impl.GdbManagerImpl;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 
@@ -64,7 +63,6 @@ import resim.utils.Json;
 import resim.utils.RESimProvider;
 
 public class DebuggerREStackProvider extends ComponentProviderAdapter implements RESimProvider{
-	GdbManagerImpl impl=null;
 
 	protected enum REStackTableColumns
 		implements EnumeratedTableColumn<REStackTableColumns, REStackRow> {
@@ -205,7 +203,7 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 		
 
 		Msg.debug(this, "call to get RESimUtils from REStack");
-		getRESimUtils();
+		resimUtils = DebuggerRESimUtilsPlugin.getRESimUtils(tool);
 		if(resimUtils == null) {
 			Msg.error(this,  "Failed to get resimUtils");
 		}else {
@@ -213,22 +211,7 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 		}
 
 	}
-    protected void getRESimUtils() {
-	    resimUtils = null;
-	    Program program = null;
-	    List<Plugin> pluginList = tool.getManagedPlugins();
-	    for (Plugin p : pluginList) {
-	    	if(p.getClass() == DebuggerRESimUtilsPlugin.class) {
-	    		resimUtils = (DebuggerRESimUtilsPlugin) p;
-	    		break;
-	    	}
-	    }
-	    if(resimUtils == null) {
 
-		    	Msg.error(this,  "Failed to find RESimUtils in tool");
-			
-	    }
-    }
 	protected void buildMainPanel() {
 		reStackTable = new GhidraTable(reStackTableModel);
 		mainPanel.add(new JScrollPane(reStackTable));
@@ -367,25 +350,19 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
              add(wmr); 
         }
 	@SuppressWarnings("unchecked")
-	public void refresh() throws Exception {
+	public void refresh(){
 		Msg.info(this,  "refresh");
         if(resimUtils == null) {
         	Msg.error(this,  "refresh failed, resimUtilsis null");
         	return;
         }
-		try {
-			impl = resimUtils.getGdbManager();
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} 
 		clear();
         String cmd = "getStackTrace()";
         Msg.info(this, "cmd is "+cmd);
 
-        String stackString = resimUtils.doRESim(cmd, impl);
+        String stackString = resimUtils.doRESim(cmd);
         if(stackString == null) {
-        	throw new Exception("Failed to get reStack json from RESim");
+        	Msg.error(this, "Failed to get reStack json from RESim");
         }
 
         Object stack_json = Json.getJson(stackString);

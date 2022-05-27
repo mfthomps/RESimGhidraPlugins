@@ -113,12 +113,7 @@ public class DebuggerRESimUtilsProvider extends ComponentProviderAdapter{
 		
 		this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
-		setTitle("WATCH MARKS");
-		setIcon(DebuggerResources.ICON_PROVIDER_STACK);
-		setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
-		setWindowMenuGroup(DebuggerPluginPackage.NAME);
 
-		setDefaultWindowPosition(WindowPosition.BOTTOM);
 		createActions();
 
 		setVisible(true);

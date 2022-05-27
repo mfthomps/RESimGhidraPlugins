@@ -43,8 +43,6 @@ public class DebuggerREStackPlugin extends AbstractDebuggerPlugin {
 
 	public DebuggerREStackPlugin(PluginTool tool) {
 		super(tool);
-		Msg.info(this,  "HEREHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHhh");
-
 	}
 
 	@Override

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package resim.watchmarks;
+package resim.bookmarks;
 
 import java.awt.BorderLayout;
 
@@ -64,33 +64,31 @@ import ghidra.framework.plugintool.PluginTool;
 import resim.utils.DebuggerRESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
-public class DebuggerWatchMarksProvider extends ComponentProviderAdapter implements RESimProvider{
+import resim.watchmarks.WatchMarksRow;
+public class DebuggerBookMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
-	protected enum WatchMarksTableColumns
-		implements EnumeratedTableColumn<WatchMarksTableColumns, WatchMarksRow> {
-		INDEX("Index", Integer.class, WatchMarksRow::getIndex),
-		PC("PC", Address.class, WatchMarksRow::getProgramCounter),
-	    CYCLE("cycle", Long.class, WatchMarksRow::getCycle),
-		MSG("Message", String.class, WatchMarksRow::getMsg),
-	    PID("pid", Long.class, WatchMarksRow::getPid);
+	protected enum BookMarksTableColumns
+		implements EnumeratedTableColumn<BookMarksTableColumns, BookMarksRow> {
+		INDEX("Index", Integer.class, BookMarksRow::getIndex),
+		MSG("Message", String.class, BookMarksRow::getMsg);
 
 		private final String header;
-		private final Function<WatchMarksRow, ?> getter;
-		private final BiConsumer<WatchMarksRow, Object> setter;
-		private final Predicate<WatchMarksRow> editable;
+		private final Function<BookMarksRow, ?> getter;
+		private final BiConsumer<BookMarksRow, Object> setter;
+		private final Predicate<BookMarksRow> editable;
 		private final Class<?> cls;
 
 		@SuppressWarnings("unchecked")
-		<T> WatchMarksTableColumns(String header, Class<T> cls, Function<WatchMarksRow, T> getter,
-				BiConsumer<WatchMarksRow, T> setter, Predicate<WatchMarksRow> editable) {
+		<T> BookMarksTableColumns(String header, Class<T> cls, Function<BookMarksRow, T> getter,
+				BiConsumer<BookMarksRow, T> setter, Predicate<BookMarksRow> editable) {
 			this.header = header;
 			this.cls = cls;
 			this.getter = getter;
-			this.setter = (BiConsumer<WatchMarksRow, Object>) setter;
+			this.setter = (BiConsumer<BookMarksRow, Object>) setter;
 			this.editable = editable;
 		}
 
-		<T> WatchMarksTableColumns(String header, Class<T> cls, Function<WatchMarksRow, T> getter) {
+		<T> BookMarksTableColumns(String header, Class<T> cls, Function<BookMarksRow, T> getter) {
 			this(header, cls, getter, null, null);
 		}
 
@@ -100,12 +98,12 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		}
 
 		@Override
-		public Object getValueOf(WatchMarksRow row) {
+		public Object getValueOf(BookMarksRow row) {
 			return getter.apply(row);
 		}
 
 		@Override
-		public void setValueOf(WatchMarksRow row, Object value) {
+		public void setValueOf(BookMarksRow row, Object value) {
 			setter.accept(row, value);
 		}
 
@@ -115,21 +113,21 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		}
 
 		@Override
-		public boolean isEditable(WatchMarksRow row) {
+		public boolean isEditable(BookMarksRow row) {
 			return setter != null && editable.test(row);
 		}
 	}
 
-	protected static class WatchMarksTableModel
-			extends DefaultEnumeratedColumnTableModel<WatchMarksTableColumns, WatchMarksRow> {
+	protected static class BookMarksTableModel
+			extends DefaultEnumeratedColumnTableModel<BookMarksTableColumns, BookMarksRow> {
 
-		public WatchMarksTableModel() {
-			super("WatchMarks", WatchMarksTableColumns.class);
+		public BookMarksTableModel() {
+			super("BookMarks", BookMarksTableColumns.class);
 		}
 
 		@Override
-		public List<WatchMarksTableColumns> defaultSortOrder() {
-			return List.of(WatchMarksTableColumns.INDEX);
+		public List<BookMarksTableColumns> defaultSortOrder() {
+			return List.of(BookMarksTableColumns.INDEX);
 		}
 	}
 
@@ -171,24 +169,24 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 	private final AutoService.Wiring autoServiceWiring;
 
 
-	protected final WatchMarksTableModel watchMarksTableModel = new WatchMarksTableModel();
-	protected GhidraTable watchMarksTable;
-	protected GhidraTableFilterPanel<WatchMarksRow> watchMarkFilterPanel;
+	protected final BookMarksTableModel bookMarksTableModel = new BookMarksTableModel();
+	protected GhidraTable bookMarksTable;
+	protected GhidraTableFilterPanel<BookMarksRow> bookMarkFilterPanel;
 
 	private JPanel mainPanel = new JPanel(new BorderLayout());
 
-	private DebuggerWatchMarkActionContext myActionContext;
+	private DebuggerBookMarkActionContext myActionContext;
 	private DebuggerRESimUtilsPlugin resimUtils; 
 
-	public DebuggerWatchMarksProvider(DebuggerWatchMarksPlugin plugin)  {
-		super(plugin.getTool(), "WatchMarks", plugin.getName());
+	public DebuggerBookMarksProvider(DebuggerBookMarksPlugin plugin)  {
+		super(plugin.getTool(), "BookMarks", plugin.getName());
 		//this.plugin = plugin;
 	    PluginTool tool = plugin.getTool();
 
 		
 		this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
-		setTitle("WATCH MARKS");
+		setTitle("BOOK MARKS");
 		setIcon(DebuggerResources.ICON_PROVIDER_STACK);
 		setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
 		setWindowMenuGroup(DebuggerPluginPackage.NAME);
@@ -203,19 +201,19 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 	}
 
 	protected void buildMainPanel() {
-		watchMarksTable = new GhidraTable(watchMarksTableModel);
-		mainPanel.add(new JScrollPane(watchMarksTable));
-		watchMarkFilterPanel = new GhidraTableFilterPanel<>(watchMarksTable, watchMarksTableModel);
-		mainPanel.add(watchMarkFilterPanel, BorderLayout.SOUTH);
+		bookMarksTable = new GhidraTable(bookMarksTableModel);
+		mainPanel.add(new JScrollPane(bookMarksTable));
+		bookMarkFilterPanel = new GhidraTableFilterPanel<>(bookMarksTable, bookMarksTableModel);
+		mainPanel.add(bookMarkFilterPanel, BorderLayout.SOUTH);
 
-		watchMarksTable.getSelectionModel().addListSelectionListener(evt -> {
+		bookMarksTable.getSelectionModel().addListSelectionListener(evt -> {
 			if (evt.getValueIsAdjusting()) {
 				return;
 			}
 			contextChanged();
 		});
 
-		watchMarksTable.addMouseListener(new MouseAdapter() {
+		bookMarksTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getButton() == MouseEvent.BUTTON2) {
@@ -231,7 +229,7 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 					return;
 				}
 				int index = myActionContext.getRow().getIndex();
-				String cmd = "goToDataMark("+index+")";
+				String cmd = "goToDebugBookmark("+index+")";
 				try {
 					String result = resimUtils.doRESimRefresh(cmd);
 				}catch(Exception error) {
@@ -242,39 +240,38 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				int selectedRow = watchMarksTable.getSelectedRow();
-				WatchMarksRow row = watchMarksTableModel.getRowObject(selectedRow);
+				int selectedRow = bookMarksTable.getSelectedRow();
+				BookMarksRow row = bookMarksTableModel.getRowObject(selectedRow);
 				rowActivated(row);
 			}
 
-			private void rowActivated(WatchMarksRow row) {
+			private void rowActivated(BookMarksRow row) {
 				// TODO Auto-generated method stub
 				
 			}
 		});
 
 		// TODO: Adjust default column widths?
-		TableColumnModel columnModel = watchMarksTable.getColumnModel();
+		TableColumnModel columnModel = bookMarksTable.getColumnModel();
 
-		TableColumn levelCol = columnModel.getColumn(WatchMarksTableColumns.INDEX.ordinal());
+		TableColumn levelCol = columnModel.getColumn(BookMarksTableColumns.INDEX.ordinal());
 		levelCol.setPreferredWidth(25);
-		TableColumn baseCol = columnModel.getColumn(WatchMarksTableColumns.PC.ordinal());
-		baseCol.setCellRenderer(CustomToStringCellRenderer.MONO_OBJECT);
+
 	}
 
 	@Override
 	public void contextChanged() {
-		WatchMarksRow row = watchMarkFilterPanel.getSelectedItem();
+		BookMarksRow row = bookMarkFilterPanel.getSelectedItem();
 		myActionContext =
-			row == null ? null : new DebuggerWatchMarkActionContext(this, row, watchMarksTable);
+			row == null ? null : new DebuggerBookMarkActionContext(this, row, bookMarksTable);
 		super.contextChanged();
 	}
 
 
 
 	protected void createActions() {
-    	new ActionBuilder("Refresh watch marks", getName())
-			.menuPath(DebuggerRESimUtilsPlugin.MENU_RESIM, "Refresh", "&Watch Marks")
+    	new ActionBuilder("Refresh book marks", getName())
+			.menuPath(DebuggerRESimUtilsPlugin.MENU_RESIM, "Refresh", "&Book Marks")
 			.menuGroup(DebuggerRESimUtilsPlugin.MENU_RESIM, "Refresh")
 			.onAction(c -> refresh())
 			.buildAndInstall(tool);
@@ -332,23 +329,19 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 
 	}
 	public void clear() {
-		watchMarksTableModel.clear();
+		bookMarksTableModel.clear();
 	}
-	public void add(WatchMarksRow row) {
-		watchMarksTableModel.add(row);
+	public void add(BookMarksRow row) {
+		bookMarksTableModel.add(row);
 	}
-        public void add(HashMap<Object, Object> entry, int index){
-        	String msg = (String) entry.get("msg");
-            long ip = (long) entry.get("ip");
-            Address ip_addr = resimUtils.addr(ip);
-            long cycle = (long) entry.get("cycle");
-            long pid = (long) entry.get("pid");
-             WatchMarksRow wmr = new WatchMarksRow(this, index, msg, ip_addr, cycle, pid);
-             add(wmr); 
-        }
+    public void add(String msg, int index){
+
+         BookMarksRow wmr = new BookMarksRow(this, index, msg);
+         add(wmr); 
+    }
 	@SuppressWarnings("unchecked")
 	public void refresh(){
-		Msg.debug(this, "refresh watchmarks");
+		Msg.debug(this, "refresh bookmarks");
 		if(resimUtils == null) {
 			Msg.out("call to get RESimUtils");
 			System.out.println("call to getRESimUtils");
@@ -360,22 +353,30 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		}
 
 		clear();
-        String cmd = "getWatchMarks()";
+        String cmd = "listBookmarks()";
         //println("cmd is "+cmd);
 
-        String watchString = resimUtils.doRESim(cmd);
-        if(watchString == null) {
-        	Msg.error(this, "Failed to get watchMarks json from RESim");
+        String bookString = resimUtils.doRESim(cmd);
+        if(bookString == null) {
+        	Msg.error(this, "Failed to get bookMarks json from RESim");
+        }
+        Msg.debug(this,"bookmark string: "+bookString);
+        String[] lines = bookString.split("\r?\n|\r");
+        int index = 0;
+        String backtrack = "backtrack";
+        String start = "START";
+        for(String line : lines) {
+        	if(line.contains(":")) {
+            	index = index+1;
+            	String[] parts = line.split(":");
+            	String entry = parts[1].trim();
+            	if(parts[1].startsWith(backtrack) &! entry.contains(start)) {
+            		entry = "<<<"+entry.substring(backtrack.length());
+            	}
+        		add(entry, index);        		
+        	}
         }
 
-        Object watch_json = Json.getJson(watchString);
-        java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
-        int index = 0;
-        for(Object o : watchMarks){
-            HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
-            add(entry, index);
-            index++;
-        }
 	}
 	
 }
