@@ -28,49 +28,42 @@ import javax.swing.table.TableColumnModel;
 
 import docking.ActionContext;
 import docking.WindowPosition;
+import docking.action.ToolBarData;
 import docking.action.builder.ActionBuilder;
-import docking.widgets.table.CustomToStringCellRenderer;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel.EnumeratedTableColumn;
 import ghidra.app.plugin.core.debug.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
+import ghidra.app.script.GhidraScript;
 
 import ghidra.framework.plugintool.AutoService;
-import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Program;
-import ghidra.trace.model.*;
-
-import ghidra.trace.model.stack.TraceStack;
-import ghidra.trace.model.stack.TraceStackFrame;
 import ghidra.trace.model.thread.TraceThread;
-import ghidra.trace.util.TraceAddressSpace;
-import ghidra.trace.util.TraceRegisterUtils;
 import ghidra.util.Msg;
-import ghidra.util.Swing;
 import ghidra.util.table.GhidraTable;
 import ghidra.util.table.GhidraTableFilterPanel;
-import utilities.util.SuppressableCallback;
-import utilities.util.SuppressableCallback.Suppression;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
 import ghidra.framework.plugintool.PluginTool;
 
 import resim.utils.DebuggerRESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
-import resim.watchmarks.WatchMarksRow;
+import resim.utils.RESimResources.*;
 public class DebuggerBookMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
 	protected enum BookMarksTableColumns
 		implements EnumeratedTableColumn<BookMarksTableColumns, BookMarksRow> {
 		INDEX("Index", Integer.class, BookMarksRow::getIndex),
-		MSG("Message", String.class, BookMarksRow::getMsg);
+		PC("PC", Address.class, BookMarksRow::getProgramCounter),
+	    CYCLE("cycle", Long.class, BookMarksRow::getCycle),
+		Mark("Mark", String.class, BookMarksRow::getMark),
+		MSG("Message", String.class, BookMarksRow::getMsg),
+		INSTRUCT("Instruction", String.class, BookMarksRow::getInstruct),
+		FUNCTION("Function", String.class, BookMarksRow::getFunction),
+	    PID("pid", Long.class, BookMarksRow::getPid);
 
 		private final String header;
 		private final Function<BookMarksRow, ?> getter;
@@ -130,7 +123,59 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
 			return List.of(BookMarksTableColumns.INDEX);
 		}
 	}
+	protected class RefreshAction extends AbstractRefreshAction {
+		public static final String GROUP = DebuggerResources.GROUP_CONTROL;
 
+		public RefreshAction() {
+			super(plugin);
+			setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+			addLocalAction(this);
+			setEnabled(false);
+		}
+
+		@Override
+
+		public void actionPerformed(ActionContext context) {
+			refresh();
+		}
+		@Override
+		public boolean isEnabledForContext(ActionContext context) {
+			boolean retval = false;
+			if(resimUtils != null) {
+				retval = resimUtils.connected();
+			}
+			return retval;
+		}
+	}
+	protected class AddAction extends AbstractAddAction {
+		public static final String GROUP = DebuggerResources.GROUP_CONTROL;
+
+		public AddAction() {
+			super(plugin);
+			setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+			addLocalAction(this);
+			setEnabled(false);
+		}
+
+		@Override
+		public void actionPerformed(ActionContext context) {
+			String bookmark = JOptionPane.showInputDialog("Bookmark Name?");
+			String cmd = "setDebugBookmark('"+bookmark+"')";
+			Msg.debug(this,  "Add bookmark is "+cmd);
+			String stuff = resimUtils.doRESim(cmd);
+			Msg.debug(this,  "resim said "+stuff);
+			refresh();
+		}
+
+		@Override
+		public boolean isEnabledForContext(ActionContext context) {
+			boolean retval = false;
+			if(resimUtils != null) {
+				retval = resimUtils.connected();
+			}		
+			return retval;
+		}
+	}
 	protected static boolean sameCoordinates(DebuggerCoordinates a, DebuggerCoordinates b) {
 		if (!Objects.equals(a.getTrace(), b.getTrace())) {
 			return false;
@@ -177,10 +222,13 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
 
 	private DebuggerBookMarkActionContext myActionContext;
 	private DebuggerRESimUtilsPlugin resimUtils; 
+	private DebuggerBookMarksPlugin plugin;
+	private RefreshAction actionRefresh;
+	private AddAction actionAdd;
 
 	public DebuggerBookMarksProvider(DebuggerBookMarksPlugin plugin)  {
 		super(plugin.getTool(), "BookMarks", plugin.getName());
-		//this.plugin = plugin;
+		this.plugin = plugin;
 	    PluginTool tool = plugin.getTool();
 
 		
@@ -267,14 +315,15 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
 		super.contextChanged();
 	}
 
-
-
 	protected void createActions() {
     	new ActionBuilder("Refresh book marks", getName())
 			.menuPath(DebuggerRESimUtilsPlugin.MENU_RESIM, "Refresh", "&Book Marks")
 			.menuGroup(DebuggerRESimUtilsPlugin.MENU_RESIM, "Refresh")
 			.onAction(c -> refresh())
 			.buildAndInstall(tool);
+    	actionRefresh = new RefreshAction();
+    	actionAdd = new AddAction();
+
 	}
 
 	@Override
@@ -289,10 +338,6 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
 		}
 		return myActionContext;
 	}
-
-
-
-
 
 	protected String computeSubTitle() {
 		TraceThread curThread = current.getThread();
@@ -334,9 +379,19 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
 	public void add(BookMarksRow row) {
 		bookMarksTableModel.add(row);
 	}
-    public void add(String msg, int index){
 
-         BookMarksRow wmr = new BookMarksRow(this, index, msg);
+    public void add(HashMap<Object, Object> entry, int index){
+    	String mark = (String) entry.get("mark");
+    	String msg = (String) entry.get("msg");
+    	String instruct = (String) entry.get("instruct");
+    	String fun = (String) entry.get("fun");
+        long ip = (long) entry.get("ip");
+        Address ip_addr = resimUtils.addr(ip);
+        long cycle = (long) entry.get("rel_cycle");
+        long pid = (long) entry.get("pid");
+ //   	public BookMarksRow(DebuggerBookMarksProvider provider, int index, String mark, Address pc, long cycle, long pid, String instruct, String msg) {
+
+         BookMarksRow wmr = new BookMarksRow(this, index, mark, ip_addr, cycle, pid, instruct, fun, msg);
          add(wmr); 
     }
 	@SuppressWarnings("unchecked")
@@ -353,13 +408,24 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
 		}
 
 		clear();
-        String cmd = "listBookmarks()";
-        //println("cmd is "+cmd);
+        String cmd = "getBookmarksJson()";
 
         String bookString = resimUtils.doRESim(cmd);
         if(bookString == null) {
         	Msg.error(this, "Failed to get bookMarks json from RESim");
+        	return;
         }
+        Msg.debug(this, "bookmark json:"+bookString);
+        Object watch_json = Json.getJson(bookString);
+        java.util.List<Object> bookMarks = (java.util.ArrayList<Object>) watch_json;
+        int index = 0;
+        for(Object o : bookMarks){
+            HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
+            add(entry, index);
+            index++;
+        }
+        actionRefresh.setEnabled(true);
+        /*
         Msg.debug(this,"bookmark string: "+bookString);
         String[] lines = bookString.split("\r?\n|\r");
         int index = 0;
@@ -376,6 +442,9 @@ public class DebuggerBookMarksProvider extends ComponentProviderAdapter implemen
         		add(entry, index);        		
         	}
         }
+        */
+        actionAdd.setEnabled(true);
+        actionRefresh.setEnabled(true);
 
 	}
 	

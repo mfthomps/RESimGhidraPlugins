@@ -17,6 +17,9 @@ package resim.restack;
 
 import java.awt.BorderLayout;
 
+import org.apache.commons.compress.utils.FileNameUtils;
+import org.apache.commons.io.FilenameUtils;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
@@ -59,6 +62,7 @@ import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 
 import resim.utils.DebuggerRESimUtilsPlugin;
+import resim.utils.RESimResources;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 
@@ -188,7 +192,7 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
 		this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
 		setTitle("REStack Trace");
-		setIcon(DebuggerResources.ICON_PROVIDER_STACK);
+		setIcon(RESimResources.ICON_RETOP);
 		setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
 		setWindowMenuGroup(DebuggerPluginPackage.NAME);
 
@@ -344,9 +348,11 @@ public class DebuggerREStackProvider extends ComponentProviderAdapter implements
         	Msg.debug(this, "adding instruct"+instruct);
         	String fun = (String) entry.get("fun_of_ip");
         	String fname = (String) entry.get("fname");
+        	String basename = FileNameUtils.getBaseName(fname);
+        	
             long ip = (long) entry.get("ip");
             Address ip_addr = resimUtils.addr(ip);
-             REStackRow wmr = new REStackRow(this, index, instruct, fun, fname, ip_addr);
+             REStackRow wmr = new REStackRow(this, index, instruct, fun, basename, ip_addr);
              add(wmr); 
         }
 	@SuppressWarnings("unchecked")

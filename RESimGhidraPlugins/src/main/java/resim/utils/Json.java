@@ -12,7 +12,7 @@ public class Json {
                 return null;
             }
             String jstring = null;
-            if(start_dict < 0 || start_list < start_dict){
+            if(start_list >=0 && (start_dict < 0 || start_list < start_dict)){
                 int end = all_string.lastIndexOf(']')+1;
                 jstring = all_string.substring(start_list, end);
         	

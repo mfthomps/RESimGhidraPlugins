@@ -28,11 +28,20 @@ public class BookMarksRow {
 	Address pc;
 	long cycle;
 	long pid;
+	String mark;
+	String fun;
+	String instruct;
 
-	public BookMarksRow(DebuggerBookMarksProvider provider, int index, String msg) {
+	public BookMarksRow(DebuggerBookMarksProvider provider, int index, String mark, Address pc, long cycle, long pid, String instruct, String fun, String msg) {
 		this.provider = provider;
 		this.msg = msg;
+		this.pc = pc;
+		this.fun = fun;
 		this.index = index;
+		this.mark = mark;
+		this.cycle = cycle;
+		this.pid = pid;
+		this.instruct = instruct;
 
 	}
 
@@ -48,6 +57,21 @@ public class BookMarksRow {
 
 	public String getMsg() {
 		return msg;
+	}
+	public String getMark() {
+		return mark;
+	}
+	public String getInstruct() {
+		return instruct;
+	}	
+	public String getFunction() {
+		return fun;
+	}
+	public long getCycle() {
+		return cycle;
+	}	
+	public long getPid() {
+		return pid;
 	}
 
 

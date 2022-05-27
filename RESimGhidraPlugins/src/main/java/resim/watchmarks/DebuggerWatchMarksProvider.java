@@ -28,6 +28,7 @@ import javax.swing.table.TableColumnModel;
 
 import docking.ActionContext;
 import docking.WindowPosition;
+import docking.action.ToolBarData;
 import docking.action.builder.ActionBuilder;
 import docking.widgets.table.CustomToStringCellRenderer;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel;
@@ -35,6 +36,7 @@ import docking.widgets.table.DefaultEnumeratedColumnTableModel.EnumeratedTableCo
 import ghidra.app.plugin.core.debug.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
+import ghidra.app.plugin.core.debug.gui.DebuggerResources.AbstractStepSnapForwardAction;
 import ghidra.app.services.*;
 
 import ghidra.framework.plugintool.AutoService;
@@ -64,6 +66,8 @@ import ghidra.framework.plugintool.PluginTool;
 import resim.utils.DebuggerRESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
+import resim.utils.RESimResources;
+import resim.utils.RESimResources.*;
 public class DebuggerWatchMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
 	protected enum WatchMarksTableColumns
@@ -132,7 +136,30 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 			return List.of(WatchMarksTableColumns.INDEX);
 		}
 	}
+	protected class RefreshAction extends AbstractRefreshAction {
+		public static final String GROUP = DebuggerResources.GROUP_CONTROL;
 
+		public RefreshAction() {
+			super(plugin);
+			setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+			addLocalAction(this);
+			setEnabled(false);
+		}
+
+		@Override
+		public void actionPerformed(ActionContext context) {
+			refresh();
+		}
+
+		@Override
+		public boolean isEnabledForContext(ActionContext context) {
+			boolean retval = false;
+			if(resimUtils != null) {
+				retval = resimUtils.connected();
+			}
+			return retval;
+		}
+	}
 	protected static boolean sameCoordinates(DebuggerCoordinates a, DebuggerCoordinates b) {
 		if (!Objects.equals(a.getTrace(), b.getTrace())) {
 			return false;
@@ -179,10 +206,11 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 
 	private DebuggerWatchMarkActionContext myActionContext;
 	private DebuggerRESimUtilsPlugin resimUtils; 
-
+	private DebuggerWatchMarksPlugin plugin;
+	private RefreshAction actionRefresh;
 	public DebuggerWatchMarksProvider(DebuggerWatchMarksPlugin plugin)  {
 		super(plugin.getTool(), "WatchMarks", plugin.getName());
-		//this.plugin = plugin;
+		this.plugin = plugin;
 	    PluginTool tool = plugin.getTool();
 
 		
@@ -278,6 +306,7 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 			.menuGroup(DebuggerRESimUtilsPlugin.MENU_RESIM, "Refresh")
 			.onAction(c -> refresh())
 			.buildAndInstall(tool);
+    	actionRefresh = new RefreshAction();
 	}
 
 	@Override
@@ -292,9 +321,6 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		}
 		return myActionContext;
 	}
-
-
-
 
 
 	protected String computeSubTitle() {
@@ -318,8 +344,6 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 		updateSubTitle();
 	}
 
-
-
 	@AutoServiceConsumed
 	public void setModelService(DebuggerModelService modelService) {
 		this.modelService = modelService;
@@ -337,15 +361,15 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
 	public void add(WatchMarksRow row) {
 		watchMarksTableModel.add(row);
 	}
-        public void add(HashMap<Object, Object> entry, int index){
-        	String msg = (String) entry.get("msg");
-            long ip = (long) entry.get("ip");
-            Address ip_addr = resimUtils.addr(ip);
-            long cycle = (long) entry.get("cycle");
-            long pid = (long) entry.get("pid");
-             WatchMarksRow wmr = new WatchMarksRow(this, index, msg, ip_addr, cycle, pid);
-             add(wmr); 
-        }
+    public void add(HashMap<Object, Object> entry, int index){
+    	String msg = (String) entry.get("msg");
+        long ip = (long) entry.get("ip");
+        Address ip_addr = resimUtils.addr(ip);
+        long cycle = (long) entry.get("cycle");
+        long pid = (long) entry.get("pid");
+         WatchMarksRow wmr = new WatchMarksRow(this, index, msg, ip_addr, cycle, pid);
+         add(wmr); 
+    }
 	@SuppressWarnings("unchecked")
 	public void refresh(){
 		Msg.debug(this, "refresh watchmarks");
@@ -376,6 +400,8 @@ public class DebuggerWatchMarksProvider extends ComponentProviderAdapter impleme
             add(entry, index);
             index++;
         }
+        actionRefresh.setEnabled(true);
+
 	}
 	
 }

@@ -476,4 +476,11 @@ public class DebuggerRESimUtilsPlugin extends Plugin {
     	protected void locationChanged(ProgramLocation loc) {
     		Msg.debug(this,  "LOCATION CHANGED");
     	}
+    	public boolean connected() {
+    		if(impl != null) {
+    			return true;
+    		}else {
+    			return false;
+    		}
+    	}
 }
