@@ -4,7 +4,7 @@ import java.util.*;
 import ghidra.util.Msg;
 public class Json {
         public static Object getJson(String all_string){
-        	
+            
             int start_dict = all_string.indexOf('{');
             int start_list = all_string.indexOf('[');
             if(start_dict < 0 && start_list < 0){
@@ -15,9 +15,9 @@ public class Json {
             if(start_list >=0 && (start_dict < 0 || start_list < start_dict)){
                 int end = all_string.lastIndexOf(']')+1;
                 jstring = all_string.substring(start_list, end);
-        	
+            
             }else if(start_list < 0 || start_dict < start_list) {
-            	int end = all_string.lastIndexOf('}')+1;
+                int end = all_string.lastIndexOf('}')+1;
                 jstring = all_string.substring(start_dict, end);
             }
             //Msg.info(null, "in getJson string "+jstring);
@@ -37,14 +37,14 @@ public class Json {
                         Msg.error(null,"invalid json input");
                         return null;
                 case JSMN_ERROR_PART:
-                	Msg.error(null,"incomplete json input");
+                    Msg.error(null,"incomplete json input");
                         return null;
                 default:
-                	Msg.error(null,"json parser returned undefined status");
+                    Msg.error(null,"json parser returned undefined status");
                         return null;
                 }
                 if(tokens.get(0).start == -1){
-                	Msg.error(null,"invalid json input");
+                    Msg.error(null,"invalid json input");
                         return null;
                 }
                 Msg.debug(null,"len of tokens is "+tokens.size());

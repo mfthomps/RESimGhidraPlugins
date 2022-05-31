@@ -18,48 +18,48 @@ package resim.watchmarks;
 
 import ghidra.program.model.address.Address;
 
-public class WatchMarksRow {
+public class RESimWatchMarksRow {
 
 
-	private final DebuggerWatchMarksProvider provider;
+    private final RESimWatchMarksProvider provider;
 
-	final String msg;
-	private int index;
-	Address pc;
-	long cycle;
-	long pid;
+    final String msg;
+    private int index;
+    Address pc;
+    long cycle;
+    long pid;
 
-	public WatchMarksRow(DebuggerWatchMarksProvider provider, int index, String msg, Address pc, long cycle, long pid) {
-		this.provider = provider;
-		this.msg = msg;
-		this.index = index;
-		this.pc = pc;
-		this.cycle = cycle;
-		this.pid = pid;
-	}
+    public RESimWatchMarksRow(RESimWatchMarksProvider provider, int index, String msg, Address pc, long cycle, long pid) {
+        this.provider = provider;
+        this.msg = msg;
+        this.index = index;
+        this.pc = pc;
+        this.cycle = cycle;
+        this.pid = pid;
+    }
 
 
 
-	public int getIndex() {
-		return index;
-	}
+    public int getIndex() {
+        return index;
+    }
 
-	public Address getProgramCounter() {
-		return pc;
-	}
+    public Address getProgramCounter() {
+        return pc;
+    }
 
-	public String getMsg() {
-		return msg;
-	}
+    public String getMsg() {
+        return msg;
+    }
     public long getPid() {
-    	return pid;
+        return pid;
     }
     public long getCycle() {
-    	return cycle;
+        return cycle;
     }
 
 
-	protected void update() {
+    protected void update() {
 
-	}
+    }
 }

@@ -19,17 +19,17 @@ import java.awt.Component;
 
 import docking.ActionContext;
 
-public class DebuggerWatchMarkActionContext extends ActionContext {
+public class RESimWatchMarkActionContext extends ActionContext {
 
-	private final WatchMarksRow row;
+    private final RESimWatchMarksRow row;
 
-	public DebuggerWatchMarkActionContext(DebuggerWatchMarksProvider provider, WatchMarksRow row,
-			Component sourceComponent) {
-		super(provider, row, sourceComponent);
-		this.row = row;
-	}
+    public RESimWatchMarkActionContext(RESimWatchMarksProvider provider, RESimWatchMarksRow row,
+            Component sourceComponent) {
+        super(provider, row, sourceComponent);
+        this.row = row;
+    }
 
-	public WatchMarksRow getRow() {
-		return row;
-	}
+    public RESimWatchMarksRow getRow() {
+        return row;
+    }
 }

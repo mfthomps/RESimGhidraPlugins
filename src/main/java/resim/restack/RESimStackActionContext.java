@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package resim.bookmarks;
+package resim.restack;
 
 import java.awt.Component;
 
 import docking.ActionContext;
 
-public class DebuggerBookMarkActionContext extends ActionContext {
+public class RESimStackActionContext extends ActionContext {
 
-	private final BookMarksRow row;
+    private final RESimStackRow row;
 
-	public DebuggerBookMarkActionContext(DebuggerBookMarksProvider provider, BookMarksRow row,
-			Component sourceComponent) {
-		super(provider, row, sourceComponent);
-		this.row = row;
-	}
+    public RESimStackActionContext(RESimStackProvider provider, RESimStackRow row,
+            Component sourceComponent) {
+        super(provider, row, sourceComponent);
+        this.row = row;
+    }
 
-	public BookMarksRow getRow() {
-		return row;
-	}
+    public RESimStackRow getRow() {
+        return row;
+    }
 }

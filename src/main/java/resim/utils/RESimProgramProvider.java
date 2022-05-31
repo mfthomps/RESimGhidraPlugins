@@ -33,59 +33,59 @@ import ghidra.trace.model.Trace;
 import resources.ResourceManager;
 
 public class RESimProgramProvider extends ComponentProviderAdapter {
-	private final static ImageIcon CLEAR_ICON = ResourceManager.loadImage("images/erase16.png");
-	private final static ImageIcon INFO_ICON = ResourceManager.loadImage("images/information.png");
+    private final static ImageIcon CLEAR_ICON = ResourceManager.loadImage("images/erase16.png");
+    private final static ImageIcon INFO_ICON = ResourceManager.loadImage("images/information.png");
 
-	private JPanel panel;
-	private JTextArea textArea;
-	private DockingAction clearAction;
-	private Program currentProgram;
-	private ProgramLocation currentLocation;
-	private DebuggerRESimUtilsPlugin resimUtils;
-	public RESimProgramProvider(PluginTool tool, String name) {
-		super(tool, name, name);
-		resimUtils = DebuggerRESimUtilsPlugin.getRESimUtils(tool);
-		createActions();
-	}
+    private JPanel panel;
+    private JTextArea textArea;
+    private DockingAction clearAction;
+    private Program currentProgram;
+    private ProgramLocation currentLocation;
+    private RESimUtilsPlugin resimUtils;
+    public RESimProgramProvider(PluginTool tool, String name) {
+        super(tool, name, name);
+        resimUtils = RESimUtilsPlugin.getRESimUtils(tool);
+        createActions();
+    }
 
-	@Override
-	public JComponent getComponent() {
-		return panel;
-	}
+    @Override
+    public JComponent getComponent() {
+        return panel;
+    }
 
-	void clear() {
-		currentProgram = null;
-		currentLocation = null;
-	}
+    void clear() {
+        currentProgram = null;
+        currentLocation = null;
+    }
 
-	void locationChanged(Program program, ProgramLocation location) {
-		this.currentProgram = program;
-		this.currentLocation = location;
-		if (isVisible()) {
-			//updateInfo();
-		}
-	}
-	protected void revToCursor() {
-		Address addr = this.currentLocation.getAddress();
+    void locationChanged(Program program, ProgramLocation location) {
+        this.currentProgram = program;
+        this.currentLocation = location;
+        if (isVisible()) {
+            //updateInfo();
+        }
+    }
+    protected void revToCursor() {
+        Address addr = this.currentLocation.getAddress();
         long offset = addr.getOffset();
         String cmd = "revToAddr("+offset+")";
         try {
-			resimUtils.doRESim(cmd);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+            resimUtils.doRESim(cmd);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
 
 
-	private void createActions() {
-		new ActionBuilder("Reverse to Cursor", getName())
-		.menuPath(DebuggerRESimUtilsPlugin.MENU_RESIM, "Reverse to", "&Cursor")
-		.menuGroup(DebuggerRESimUtilsPlugin.MENU_RESIM, "Reverse to")
-		.onAction(c -> revToCursor())
-		.buildAndInstall(tool);
-	}
+    private void createActions() {
+        new ActionBuilder("Reverse to Cursor", getName())
+        .menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse to", "&Cursor")
+        .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse to")
+        .onAction(c -> revToCursor())
+        .buildAndInstall(tool);
+    }
 
 
 
