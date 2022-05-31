@@ -60,6 +60,9 @@ import com.google.common.collect.Range;
         servicesRequired = { //
         } // 
 )
+/*
+Want this plugin to load first.  Does not otherwise need to extend Plugin, it has no window
+*/
 public class RESimUtilsPlugin extends Plugin {
         private PluginTool tool;
         private Program program;
@@ -167,16 +170,15 @@ public class RESimUtilsPlugin extends Plugin {
                 object_model = getObjectModel();
                 object_model.invalidateAllLocalCaches();
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                Msg.error(this,  getExceptString(e));
             }
             DebuggerObjectsProvider dbo;
             try {
                 dbo = getDebuggerObjectsProvider();
                 dbo.refresh();
+                Msg.debug(this, "refreshClient did refresh of debugger");
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                Msg.error(this,  getExceptString(e));
             }
             for(RESimProvider provider : refreshProviders) {
                 provider.refresh();
@@ -198,9 +200,13 @@ public class RESimUtilsPlugin extends Plugin {
              * @param cmd Command to execute
              * @return The response from RESim
              */
+            Msg.debug(this,"doRESimRefresh do cmd: "+cmd);
             String retval = doRESim(cmd);
             if(retval != null) {
+                Msg.debug(this, "doRESimRefresh did command, now refresh client.");
                 refreshClient();
+            }else{
+                Msg.error(this, "doRESimRefresh got null from refreshClient.");
             }
             return retval;
         }
@@ -406,6 +412,10 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.error(this,  "Failed to get program");
             }else {
                 initOtherPlugins();
+                for(RESimProvider provider : refreshProviders) {
+                    provider.refresh();
+                }
+                Msg.debug(this,"Finished initializing the registered plugins.");
 
             }
         }
@@ -447,15 +457,25 @@ public class RESimUtilsPlugin extends Plugin {
             /**
              * Register a RESim plugin to be refreshed each time program state changes.
              */
-            Msg.debug(this,"refresh plugins");
-            refreshProviders.add(provider);
+            if(impl == null){
+                Msg.debug(this,"register plugin for refresh");
+                refreshProviders.add(provider);
+            }else{
+                Msg.debug(this,"registerRefresh Already connected, just refresh the plugin.");
+                provider.refresh();
+            }
         }
         public void registerInit(RESimProvider provider) {
             /**
              * Register a RESim plugin to be initialized when the debugger is attached.
              */
-            Msg.debug(this,"refresh plugins");
-            initProviders.add(provider);
+            if(impl == null){
+                Msg.debug(this,"register plugin for init ");
+                initProviders.add(provider);
+            }else{
+                Msg.debug(this,"registerInit Already connected, just refresh the plugin.");
+                provider.refresh();
+            }
         }
 
         private void initOtherPlugins() {

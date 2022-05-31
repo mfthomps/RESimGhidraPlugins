@@ -52,6 +52,7 @@ import resim.utils.RESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 import resim.utils.RESimResources.*;
+import resim.utils.RESimResources;
 public class RESimBookMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
     protected enum BookMarksTableColumns
@@ -235,7 +236,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
         setTitle("BOOK MARKS");
-        setIcon(DebuggerResources.ICON_PROVIDER_STACK);
+        setIcon(RESimResources.ICON_RETOP);
         setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
         setWindowMenuGroup(DebuggerPluginPackage.NAME);
         Msg.debug(this,  "did set window");

@@ -30,7 +30,9 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.*;
 import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.Trace;
+import ghidra.util.Msg;
 import resources.ResourceManager;
+import resim.utils.RESimUtilsPlugin;
 
 public class RESimProgramProvider extends ComponentProviderAdapter {
     private final static ImageIcon CLEAR_ICON = ResourceManager.loadImage("images/erase16.png");
@@ -70,11 +72,11 @@ public class RESimProgramProvider extends ComponentProviderAdapter {
         long offset = addr.getOffset();
         String cmd = "revToAddr("+offset+")";
         try {
-            resimUtils.doRESim(cmd);
+            resimUtils.doRESimRefresh(cmd);
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Msg.error(this, RESimUtilsPlugin.getExceptString(e));
         }
+        Msg.debug(this, "revToCursor cmd: "+cmd);
     }
 
 

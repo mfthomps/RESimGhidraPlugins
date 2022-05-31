@@ -217,7 +217,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
         setTitle("WATCH MARKS");
-        setIcon(DebuggerResources.ICON_PROVIDER_STACK);
+        setIcon(RESimResources.ICON_RETOP);
         setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
         setWindowMenuGroup(DebuggerPluginPackage.NAME);
         Msg.debug(this,  "did set window");

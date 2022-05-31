@@ -81,20 +81,14 @@ class RevToCursorAction extends ListingContextAction {
         }
         long addr = entry.getOffset();
         String cmd = "revToAddr("+addr+")";
+        Msg.debug(this, "In actionPerformed will do cmd: "+cmd);
         try {
             plugin.doRESimRefresh(cmd);
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Msg.error(this, plugin.getExceptString(e));
         }
-        
-
-
-
-        //funcPlugin.execute(context.getProgram(), cmd);
+        Msg.debug(this, "back from actionPerformed cmd: "+cmd);
     }
-
-
 
     @Override
     protected boolean isEnabledForContext(ListingActionContext context) {

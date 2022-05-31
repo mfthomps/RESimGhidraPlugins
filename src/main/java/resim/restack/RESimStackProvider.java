@@ -212,6 +212,7 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
             Msg.error(this,  "Failed to get resimUtils");
         }else {
             resimUtils.registerRefresh(this);
+            Msg.debug(this, "Registered refresh with resimUtils");
         }
 
     }
