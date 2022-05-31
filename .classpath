@@ -1,450 +1,438 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" output="bin/main" path="src/main/java">
+	<classpathentry output="bin/main" kind="src" path="src/main/java">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="gradle_scope" value="main"/>
 			<attribute name="gradle_used_by_scope" value="main,test,integrationTest,pcodeTest,screenShots"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="bin/main" path="src/main/help">
+	<classpathentry output="bin/main" kind="src" path="src/main/help">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="gradle_scope" value="main"/>
 			<attribute name="gradle_used_by_scope" value="main,test,integrationTest,pcodeTest,screenShots"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="bin/main" path="build/help/main">
+	<classpathentry output="bin/main" kind="src" path="build/help/main">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="gradle_scope" value="main"/>
 			<attribute name="gradle_used_by_scope" value="main,test,integrationTest,pcodeTest,screenShots"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="bin/main" path="src/main/resources">
+	<classpathentry output="bin/main" kind="src" path="src/main/resources">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="gradle_scope" value="main"/>
 			<attribute name="gradle_used_by_scope" value="main,test,integrationTest,pcodeTest,screenShots"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="bin/test" path="src/test/java">
+	<classpathentry output="bin/test" kind="src" path="src/test/java">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="gradle_scope" value="test"/>
 			<attribute name="gradle_used_by_scope" value="test,integrationTest,screenShots"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="bin/integrationTest" path="src/test.slow/java">
+	<classpathentry output="bin/integrationTest" kind="src" path="src/test.slow/java">
 		<attributes>
 			<attribute name="test" value="false"/>
 			<attribute name="gradle_scope" value="integrationTest"/>
 			<attribute name="gradle_used_by_scope" value="integrationTest,screenShots"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11/">
+	<classpathentry kind="output" path="bin/default"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11/"/>
+	<classpathentry kind="src" path="/Framework Help">
 		<attributes>
-			<attribute name="module" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/javax.help/javahelp/2.0.05/ca70822c47a67fc3a11670270567c2d01566dae1/javahelp-2.0.05.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/javax.help/javahelp/2.0.05/1f92cd0c755a55c274b28a4691c30307b3ea63c0/javahelp-2.0.05-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.java.dev.timingframework/timingframework/1.0/2c12a328bfd82ddb0c4389e915229ea3df1740b8/timingframework-1.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.java.dev.timingframework/timingframework/1.0/8efe21266dca7bbbe19079c9f2c0254def5734f2/timingframework-1.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/19.0/6ce200f6b23222af3d8abb6b6459e6c44f4bb0e9/guava-19.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/19.0/91a4d115400e904f22b03a78deb355e9ea803cd4/guava-19.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jdom/jdom-legacy/1.1.3/8bdfeb39fa929c35f5e4f0b02d34350db39a1efc/jdom-legacy-1.1.3.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jdom/jdom-legacy/1.1.3/b8b961a9f20d1faf160681c49f773a66b87efd63/jdom-legacy-1.1.3-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-core/2.17.1/779f60f3844dadc3ef597976fcb1e5127b1f343d/log4j-core-2.17.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-core/2.17.1/311c00d3764db7fa3ba5f26d0acb5840e52454aa/log4j-core-2.17.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.17.1/d771af8e336e372fb5399c99edabe0919aeaf5b2/log4j-api-2.17.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.17.1/d23d37cc41300a7f6eba7813855dbb224e2a3177/log4j-api-2.17.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-collections4/4.1/a4cf4688fe1c7e3a63aa636cc96d013af537768e/commons-collections4-4.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-collections4/4.1/f305f3aa45a3b208c013ef92328f8f230329f20e/commons-collections4-4.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.6/ba72cf0c40cf701e972fe7720ae844629f4ecca2/commons-text-1.6.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.6/537f45636348da7c83861c537ec5ebb36933f5f4/commons-text-1.6-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.9/122c7cee69b53ed4a7681c03d4ee4c0e2765da5/commons-lang3-3.9.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.9/8f1cb192e229bc4cd1c900c51171d96706e6d195/commons-lang3-3.9-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.11.0/a2503f302b11ebde7ebc3df41daebe0e4eea3689/commons-io-2.11.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.11.0/2ef0187124bbfc7aed3038d4ffdd2241e8992937/commons-io-2.11.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.9.0/8a1167e089096758b49f9b34066ef98b2f4b37aa/gson-2.9.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.9.0/83f964c0d36cda6b05269fdd43abd0f553a17c84/gson-2.9.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcpkix-jdk15on/1.69/45c36fb72fafb0b688c6af795e6cc803f6f79ee5/bcpkix-jdk15on-1.69.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcpkix-jdk15on/1.69/8bc5214401459bd91eea816b516079da38374e90/bcpkix-jdk15on-1.69-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcutil-jdk15on/1.69/c3edf93d346e97f64f041e448e7455c39c7eff64/bcutil-jdk15on-1.69.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcutil-jdk15on/1.69/deeb3fbbf373e05e2a20941f9a8ce90e9aeab3d2/bcutil-jdk15on-1.69-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15on/1.69/91e1628251cf3ca90093ce9d0fe67e5b7dab3850/bcprov-jdk15on-1.69.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15on/1.69/67dc6476845f6b29cb520b5df61db65ae56718e4/bcprov-jdk15on-1.69-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-all/1.3/63a21ebc981131004ad02e0434e799fd7f3a8d5a/hamcrest-all-1.3.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-all/1.3/47e033b7ab18c5dbd5fe29fc1bd5a40afe028818/hamcrest-all-1.3-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jmockit/jmockit/1.44/1b41baa8fde0209ce90def969826532a23608df0/jmockit-1.44.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jmockit/jmockit/1.44/8b443caa1601beba8d64436b0791314e387f913c/jmockit-1.44-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/junit/junit/4.12/2973d150c0dc1fefe998f834810d68f278ea58ec/junit-4.12.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/junit/junit/4.12/a6c32b40bf3d76eca54e3c601e5d1470c86fcdfa/junit-4.12-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.felix/org.apache.felix.framework/7.0.3/c60632913c11ae47e8a6dcd5b617f48ee17693f5/org.apache.felix.framework-7.0.3.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.felix/org.apache.felix.framework/7.0.3/65d27f0f61e59b7e6434d064a05caf59daa65eb/org.apache.felix.framework-7.0.3-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.github.rotty3000/phidias/0.3.7/6796262832c8722b3a60e4000452d9a2fa570a9a/phidias-0.3.7.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.github.rotty3000/phidias/0.3.7/88fdff364c8ee9a053f24cd12dd51f9c15f845c7/phidias-0.3.7-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bndlib/6.2.0/b11124a074b8f0ddcbc7447a051b821711384e4c/biz.aQute.bndlib-6.2.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bndlib/6.2.0/67b5acffc11a06e24c01d5733fc8dbea69a93d7c/biz.aQute.bndlib-6.2.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bnd.util/6.2.0/72081277801b846b2df278a90152db0b10d8e63a/biz.aQute.bnd.util-6.2.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bnd.util/6.2.0/df66a9d3f12b6932e5d2499ca4e698bd1ead63/biz.aQute.bnd.util-6.2.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.util.promise/1.2.0/26c17e1bbfc885ae9eae878de9a0afb73240f031/org.osgi.util.promise-1.2.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.util.promise/1.2.0/b79530df49d1cac3d6b64799fbc6cee28e1f0e89/org.osgi.util.promise-1.2.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.25/da76ca59f6a57ee3102f8f9bd9cee742973efa8a/slf4j-api-1.7.25.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.25/962153db4a9ea71b79d047dfd1b2a0d80d8f4739/slf4j-api-1.7.25-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/b19b5927c2c25b6c70f093767041e641ae0b1b35/jsr305-3.0.2-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/1dc37250fbc78e23a65a67fbbaf71d2e9cbc3c0b/hamcrest-core-1.3-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-visualization/2.1.1/40488654daea1f57e0790e40153be19a307943dd/jung-visualization-2.1.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-visualization/2.1.1/609ff598dca52738a22c78b911496355aec4e797/jung-visualization-2.1.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-algorithms/2.1.1/632bd89a61a6c1ca7ed3505aca0765cff987096e/jung-algorithms-2.1.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-algorithms/2.1.1/31d52d354e27780d55756e1919a0de9055cc72dc/jung-algorithms-2.1.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-graph-impl/2.1.1/8293acb2ab4c00a3939cb99a8751e5d38a4299dc/jung-graph-impl-2.1.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-graph-impl/2.1.1/b204bb635887d2ada602b0e59686e9431ab33431/jung-graph-impl-2.1.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-api/2.1.1/e47ee4efdfacce12f0af620747d9d0e44bf2eaa4/jung-api-2.1.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-api/2.1.1/a0c314f22644fb7258fe0d9cdc0d2a784bbd0f60/jung-api-2.1.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-io/1.5.1/ffe3b7b0edc4f22268d15670840a211a7b0d87cd/jgrapht-io-1.5.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-io/1.5.1/9a105be0383bb7d8c784212aa2f82c9062b2dd50/jgrapht-io-1.5.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.8/879a6bde4c0537a25504c72ec7a94ba4099f469c/commons-text-1.8.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.8/79ddc6e7b5ea247f5553f4e948863708dbdd5316/commons-text-1.8-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-core/1.5.1/1b9abad9a3d052c6a5d7135cbe63916f5ed11bef/jgrapht-core-1.5.1.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-core/1.5.1/5a1796ca406e2e1a30e78dca460d4b5731ca0178/jgrapht-core-1.5.1-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr/3.5.2/c4a65c950bfc3e7d04309c515b2177c00baf7764/antlr-3.5.2.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr/3.5.2/92c9bde32f0b1092507701b2b302af84534eb9b8/antlr-3.5.2-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/ST4/4.0.8/a1c55e974f8a94d78e2348fa6ff63f4fa1fae64/ST4-4.0.8.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/ST4/4.0.8/6f23134f1c98dfce77f85defda31bfbce3e2a4ac/ST4-4.0.8-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr-runtime/3.5.2/cd9cd41361c155f3af0f653009dcecb08d8b4afd/antlr-runtime-3.5.2.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr-runtime/3.5.2/5214ea45dd20d3a2e4caa6f1ad2248ad107e0daf/antlr-runtime-3.5.2-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/msv/20050913/3fc5ca9708a8e7a219001da0bc3870d0a2d51c2d/msv-20050913.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/msv/msv/20050913/affc0f96984b1d3f007d73d44f22449396109264/msv-20050913-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/xsdlib/20050913/836b85d70c54589aeef2ea810232ab192137ea84/xsdlib-20050913.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/isorelax/20050913/b21859c352bd959ea22d06b2fe8c93b2e24531b9/isorelax-20050913.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.codehaus.mojo/animal-sniffer-annotations/1.9/c29299253a087898aaff7f4eac57effa46b1910a/animal-sniffer-annotations-1.9.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.codehaus.mojo/animal-sniffer-annotations/1.9/10e0a3d89d48cc8efec05ead06cab602b694050b/animal-sniffer-annotations-1.9-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.core/5.0.0/6e5e8cd3c9059c08e1085540442a490b59a7783c/org.osgi.core-5.0.0.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.core/5.0.0/49a8f6d5428650ce3ad56bb365a98c6c88f62886/org.osgi.core-5.0.0-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jheaps/jheaps/0.13/b30f6a9c1e99b2e102126060195469ef7fd7211b/jheaps-0.13.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jheaps/jheaps/0.13/bc9436c063a6a51ece5f7649f6c7be65274e149f/jheaps-0.13-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.21/4ec95b60d4e86b5c95a0e919cb172a0af98011ef/commons-compress-1.21.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.21/b3e0a269baa0d05b02f9b4447be463d25da8c097/commons-compress-1.21-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.tukaani/xz/1.9/1ea4bec1a921180164852c65006d928617bd2caf/xz-1.9.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.tukaani/xz/1.9/802ffc2e4237e0c76999e293a97171de020d659f/xz-1.9-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-nop/1.7.25/8c7708c79afec923de8957b7d4f90177628b9fcd/slf4j-nop-1.7.25.jar" sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-nop/1.7.25/8430873817771a59854d573b48fed713d4b1cf56/slf4j-nop-1.7.25-sources.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/relaxngDatatype/20050913/b117e0f9182c6cc094e833489bcdddadfd414090/relaxngDatatype-20050913.jar">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Debug Framework-Debugging"/>
-	<classpathentry kind="src" path="/Debug Debugger-agent-gdb"/>
-	<classpathentry kind="src" path="/Debug Framework-TraceModeling"/>
-	<classpathentry kind="src" path="/Debug ProposedUtils"/>
-	<classpathentry kind="src" path="/Debug Debugger"/>
-	<classpathentry kind="src" path="/Framework DB">
-		<attributes>
-			<attribute name="test" value="false"/>
 			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework FileSystem">
-		<attributes>
 			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Project">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Graph">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework SoftwareModeling">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Features Base">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Utility">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="/Framework Generic">
-		<attributes>
-			<attribute name="test" value="false"/>
-			<attribute name="without_test_code" value="true"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="/Framework Docking">
 		<attributes>
-			<attribute name="test" value="false"/>
 			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="/Framework Help">
+	<classpathentry kind="src" path="/Framework Generic">
 		<attributes>
-			<attribute name="test" value="false"/>
 			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/_GhidraDocs"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/_Integration Test"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/_JsonDoclet"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/_LaunchSupport"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/_Skeleton"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug AnnotationValidator"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgeng"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgmodel"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-dbgmodel-traceloader"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-frida"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-agent-lldb"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-gadp"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-jpda"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Debugger-swig-lldb"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Debug Framework-AsyncComm"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features BytePatterns"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features ByteViewer"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features DebugUtils"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Decompiler"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features DecompilerDependent"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features FileFormats"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features FunctionID"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features GhidraServer"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features GnuDemangler"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Graph FunctionCalls"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Graph FunctionGraph"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Graph FunctionGraphDecompilerExt"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Graph ProgramGraph"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Graph Services"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features MicrosoftCodeAnalyzer"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features MicrosoftDemang"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features MicrosoftDemangler"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features PDB"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features ProgramDiff"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Python"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features Recognizers"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features SourceCodeLookup"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Features VersionTracking"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/GhidraScripts"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/GPL DMG"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors 68000"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors 8051"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors AARCH64"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors ARM"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors Atmel"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors Dalvik"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors DATA"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors HCS12"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors JVM"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors MIPS"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors PIC"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors PowerPC"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors RISCV"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors Sparc"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors SuperH4"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors Toy"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors tricore"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors v850"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Processors x86"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Xtra Bundle Examples"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Xtra sample"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Xtra SampleTablePlugin"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Xtra SleighDevTools"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Z Public Release"/>
-	<classpathentry kind="output" path="bin/default"/>
+	<classpathentry kind="src" path="/Framework Utility">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Features Base">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework SoftwareModeling">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework Graph">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework Project">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework FileSystem">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/Framework DB">
+		<attributes>
+			<attribute name="without_test_code" value="true"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/javax.help/javahelp/2.0.05/1f92cd0c755a55c274b28a4691c30307b3ea63c0/javahelp-2.0.05-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/javax.help/javahelp/2.0.05/ca70822c47a67fc3a11670270567c2d01566dae1/javahelp-2.0.05.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.java.dev.timingframework/timingframework/1.0/8efe21266dca7bbbe19079c9f2c0254def5734f2/timingframework-1.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.java.dev.timingframework/timingframework/1.0/2c12a328bfd82ddb0c4389e915229ea3df1740b8/timingframework-1.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/19.0/91a4d115400e904f22b03a78deb355e9ea803cd4/guava-19.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/19.0/6ce200f6b23222af3d8abb6b6459e6c44f4bb0e9/guava-19.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jdom/jdom-legacy/1.1.3/b8b961a9f20d1faf160681c49f773a66b87efd63/jdom-legacy-1.1.3-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jdom/jdom-legacy/1.1.3/8bdfeb39fa929c35f5e4f0b02d34350db39a1efc/jdom-legacy-1.1.3.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-core/2.17.1/311c00d3764db7fa3ba5f26d0acb5840e52454aa/log4j-core-2.17.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-core/2.17.1/779f60f3844dadc3ef597976fcb1e5127b1f343d/log4j-core-2.17.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.17.1/d23d37cc41300a7f6eba7813855dbb224e2a3177/log4j-api-2.17.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.17.1/d771af8e336e372fb5399c99edabe0919aeaf5b2/log4j-api-2.17.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-collections4/4.1/f305f3aa45a3b208c013ef92328f8f230329f20e/commons-collections4-4.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-collections4/4.1/a4cf4688fe1c7e3a63aa636cc96d013af537768e/commons-collections4-4.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.6/537f45636348da7c83861c537ec5ebb36933f5f4/commons-text-1.6-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.6/ba72cf0c40cf701e972fe7720ae844629f4ecca2/commons-text-1.6.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.9/8f1cb192e229bc4cd1c900c51171d96706e6d195/commons-lang3-3.9-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.9/122c7cee69b53ed4a7681c03d4ee4c0e2765da5/commons-lang3-3.9.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.11.0/2ef0187124bbfc7aed3038d4ffdd2241e8992937/commons-io-2.11.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/2.11.0/a2503f302b11ebde7ebc3df41daebe0e4eea3689/commons-io-2.11.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.9.0/83f964c0d36cda6b05269fdd43abd0f553a17c84/gson-2.9.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.9.0/8a1167e089096758b49f9b34066ef98b2f4b37aa/gson-2.9.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcpkix-jdk15on/1.69/8bc5214401459bd91eea816b516079da38374e90/bcpkix-jdk15on-1.69-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcpkix-jdk15on/1.69/45c36fb72fafb0b688c6af795e6cc803f6f79ee5/bcpkix-jdk15on-1.69.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcutil-jdk15on/1.69/deeb3fbbf373e05e2a20941f9a8ce90e9aeab3d2/bcutil-jdk15on-1.69-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcutil-jdk15on/1.69/c3edf93d346e97f64f041e448e7455c39c7eff64/bcutil-jdk15on-1.69.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15on/1.69/67dc6476845f6b29cb520b5df61db65ae56718e4/bcprov-jdk15on-1.69-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15on/1.69/91e1628251cf3ca90093ce9d0fe67e5b7dab3850/bcprov-jdk15on-1.69.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="helpIndex,integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-all/1.3/47e033b7ab18c5dbd5fe29fc1bd5a40afe028818/hamcrest-all-1.3-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-all/1.3/63a21ebc981131004ad02e0434e799fd7f3a8d5a/hamcrest-all-1.3.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jmockit/jmockit/1.44/8b443caa1601beba8d64436b0791314e387f913c/jmockit-1.44-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jmockit/jmockit/1.44/1b41baa8fde0209ce90def969826532a23608df0/jmockit-1.44.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/junit/junit/4.12/a6c32b40bf3d76eca54e3c601e5d1470c86fcdfa/junit-4.12-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/junit/junit/4.12/2973d150c0dc1fefe998f834810d68f278ea58ec/junit-4.12.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.felix/org.apache.felix.framework/7.0.3/65d27f0f61e59b7e6434d064a05caf59daa65eb/org.apache.felix.framework-7.0.3-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.felix/org.apache.felix.framework/7.0.3/c60632913c11ae47e8a6dcd5b617f48ee17693f5/org.apache.felix.framework-7.0.3.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.github.rotty3000/phidias/0.3.7/88fdff364c8ee9a053f24cd12dd51f9c15f845c7/phidias-0.3.7-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.github.rotty3000/phidias/0.3.7/6796262832c8722b3a60e4000452d9a2fa570a9a/phidias-0.3.7.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bndlib/6.2.0/67b5acffc11a06e24c01d5733fc8dbea69a93d7c/biz.aQute.bndlib-6.2.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bndlib/6.2.0/b11124a074b8f0ddcbc7447a051b821711384e4c/biz.aQute.bndlib-6.2.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bnd.util/6.2.0/df66a9d3f12b6932e5d2499ca4e698bd1ead63/biz.aQute.bnd.util-6.2.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/biz.aQute.bnd/biz.aQute.bnd.util/6.2.0/72081277801b846b2df278a90152db0b10d8e63a/biz.aQute.bnd.util-6.2.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.util.promise/1.2.0/b79530df49d1cac3d6b64799fbc6cee28e1f0e89/org.osgi.util.promise-1.2.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.util.promise/1.2.0/26c17e1bbfc885ae9eae878de9a0afb73240f031/org.osgi.util.promise-1.2.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.25/962153db4a9ea71b79d047dfd1b2a0d80d8f4739/slf4j-api-1.7.25-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.25/da76ca59f6a57ee3102f8f9bd9cee742973efa8a/slf4j-api-1.7.25.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/b19b5927c2c25b6c70f093767041e641ae0b1b35/jsr305-3.0.2-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/1dc37250fbc78e23a65a67fbbaf71d2e9cbc3c0b/hamcrest-core-1.3-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-visualization/2.1.1/609ff598dca52738a22c78b911496355aec4e797/jung-visualization-2.1.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-visualization/2.1.1/40488654daea1f57e0790e40153be19a307943dd/jung-visualization-2.1.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-algorithms/2.1.1/31d52d354e27780d55756e1919a0de9055cc72dc/jung-algorithms-2.1.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-algorithms/2.1.1/632bd89a61a6c1ca7ed3505aca0765cff987096e/jung-algorithms-2.1.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-graph-impl/2.1.1/b204bb635887d2ada602b0e59686e9431ab33431/jung-graph-impl-2.1.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-graph-impl/2.1.1/8293acb2ab4c00a3939cb99a8751e5d38a4299dc/jung-graph-impl-2.1.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-api/2.1.1/a0c314f22644fb7258fe0d9cdc0d2a784bbd0f60/jung-api-2.1.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/net.sf.jung/jung-api/2.1.1/e47ee4efdfacce12f0af620747d9d0e44bf2eaa4/jung-api-2.1.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-io/1.5.1/9a105be0383bb7d8c784212aa2f82c9062b2dd50/jgrapht-io-1.5.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-io/1.5.1/ffe3b7b0edc4f22268d15670840a211a7b0d87cd/jgrapht-io-1.5.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.8/79ddc6e7b5ea247f5553f4e948863708dbdd5316/commons-text-1.8-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-text/1.8/879a6bde4c0537a25504c72ec7a94ba4099f469c/commons-text-1.8.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-core/1.5.1/5a1796ca406e2e1a30e78dca460d4b5731ca0178/jgrapht-core-1.5.1-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jgrapht/jgrapht-core/1.5.1/1b9abad9a3d052c6a5d7135cbe63916f5ed11bef/jgrapht-core-1.5.1.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr/3.5.2/92c9bde32f0b1092507701b2b302af84534eb9b8/antlr-3.5.2-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr/3.5.2/c4a65c950bfc3e7d04309c515b2177c00baf7764/antlr-3.5.2.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/ST4/4.0.8/6f23134f1c98dfce77f85defda31bfbce3e2a4ac/ST4-4.0.8-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/ST4/4.0.8/a1c55e974f8a94d78e2348fa6ff63f4fa1fae64/ST4-4.0.8.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr-runtime/3.5.2/5214ea45dd20d3a2e4caa6f1ad2248ad107e0daf/antlr-runtime-3.5.2-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.antlr/antlr-runtime/3.5.2/cd9cd41361c155f3af0f653009dcecb08d8b4afd/antlr-runtime-3.5.2.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/msv/msv/20050913/affc0f96984b1d3f007d73d44f22449396109264/msv-20050913-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/msv/20050913/3fc5ca9708a8e7a219001da0bc3870d0a2d51c2d/msv-20050913.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/xsdlib/20050913/836b85d70c54589aeef2ea810232ab192137ea84/xsdlib-20050913.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/isorelax/20050913/b21859c352bd959ea22d06b2fe8c93b2e24531b9/isorelax-20050913.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.codehaus.mojo/animal-sniffer-annotations/1.9/10e0a3d89d48cc8efec05ead06cab602b694050b/animal-sniffer-annotations-1.9-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.codehaus.mojo/animal-sniffer-annotations/1.9/c29299253a087898aaff7f4eac57effa46b1910a/animal-sniffer-annotations-1.9.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.core/5.0.0/49a8f6d5428650ce3ad56bb365a98c6c88f62886/org.osgi.core-5.0.0-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.osgi/org.osgi.core/5.0.0/6e5e8cd3c9059c08e1085540442a490b59a7783c/org.osgi.core-5.0.0.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.jheaps/jheaps/0.13/bc9436c063a6a51ece5f7649f6c7be65274e149f/jheaps-0.13-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.jheaps/jheaps/0.13/b30f6a9c1e99b2e102126060195469ef7fd7211b/jheaps-0.13.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.21/b3e0a269baa0d05b02f9b4447be463d25da8c097/commons-compress-1.21-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-compress/1.21/4ec95b60d4e86b5c95a0e919cb172a0af98011ef/commons-compress-1.21.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.tukaani/xz/1.9/802ffc2e4237e0c76999e293a97171de020d659f/xz-1.9-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.tukaani/xz/1.9/1ea4bec1a921180164852c65006d928617bd2caf/xz-1.9.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-nop/1.7.25/8430873817771a59854d573b48fed713d4b1cf56/slf4j-nop-1.7.25-sources.jar" kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-nop/1.7.25/8c7708c79afec923de8957b7d4f90177628b9fcd/slf4j-nop-1.7.25.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/home/mike/.gradle/caches/modules-2/files-2.1/msv/relaxngDatatype/20050913/b117e0f9182c6cc094e833489bcdddadfd414090/relaxngDatatype-20050913.jar">
+		<attributes>
+			<attribute name="gradle_used_by_scope" value="integrationTest,main,pcodeTest,test"/>
+			<attribute name="test" value="false"/>
+			<attribute name="module" value="false"/>
+		</attributes>
+	</classpathentry>
 </classpath>
