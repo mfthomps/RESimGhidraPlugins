@@ -30,6 +30,8 @@ import javax.swing.*;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import docking.action.ToolBarData;
+import docking.action.builder.ActionBuilder;
 import docking.ActionContext;
 import docking.WindowPosition;
 import docking.widgets.table.CustomToStringCellRenderer;
@@ -63,6 +65,7 @@ import ghidra.program.model.listing.Program;
 
 import resim.utils.RESimUtilsPlugin;
 import resim.utils.RESimResources;
+import resim.utils.RESimResources.*;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 
@@ -135,6 +138,30 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
             return List.of(REStackTableColumns.INDEX);
         }
     }
+    protected class RefreshAction extends AbstractRefreshAction {
+        public static final String GROUP = DebuggerResources.GROUP_CONTROL;
+
+        public RefreshAction() {
+            super(plugin);
+            setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+            addLocalAction(this);
+            setEnabled(false);
+        }
+
+        @Override
+        public void actionPerformed(ActionContext context) {
+            refresh();
+        }
+
+        @Override
+        public boolean isEnabledForContext(ActionContext context) {
+            boolean retval = false;
+            if(resimUtils != null) {
+                retval = resimUtils.connected();
+            }
+            return retval;
+        }
+    }
 
     protected static boolean sameCoordinates(DebuggerCoordinates a, DebuggerCoordinates b) {
         if (!Objects.equals(a.getTrace(), b.getTrace())) {
@@ -182,10 +209,12 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
 
     private RESimStackActionContext myActionContext;
     private RESimUtilsPlugin resimUtils; 
+    private RefreshAction actionRefresh;
+    private RESimStackPlugin plugin;
 
     public RESimStackProvider(RESimStackPlugin plugin)  {
         super(plugin.getTool(), "REStack", plugin.getName());
-        //this.plugin = plugin;
+        this.plugin = plugin;
         PluginTool tool = plugin.getTool();
 
         
@@ -200,6 +229,7 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         buildMainPanel();
 
         setDefaultWindowPosition(WindowPosition.BOTTOM);
+        Msg.debug(this, "call to create actions...");
         createActions();
 
         setVisible(true);
@@ -281,10 +311,14 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         super.contextChanged();
     }
 
-
-
     protected void createActions() {
-        // TODO: Anything?
+        Msg.debug(this, "createActions");
+        new ActionBuilder("Refresh stack trace", getName())
+            .menuPath(RESimUtilsPlugin.MENU_RESIM, "Refresh", "&Stack trace")
+            .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Refresh")
+            .onAction(c -> refresh())
+            .buildAndInstall(tool);
+        actionRefresh = new RefreshAction();
     }
 
     @Override
@@ -300,20 +334,14 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         return myActionContext;
     }
 
-
-
-
-
     protected String computeSubTitle() {
         TraceThread curThread = current.getThread();
         return curThread == null ? "" : curThread.getName();
     }
 
     protected void updateSubTitle() {
-        setSubTitle(computeSubTitle());
+        //setSubTitle(computeSubTitle());
     }
-
-
 
     public void coordinatesActivated(DebuggerCoordinates coordinates) {
         if (sameCoordinates(current, coordinates)) {
@@ -324,8 +352,6 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
 
         updateSubTitle();
     }
-
-
 
     @AutoServiceConsumed
     public void setModelService(DebuggerModelService modelService) {
@@ -367,20 +393,19 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         String cmd = "getStackTrace()";
         Msg.info(this, "cmd is "+cmd);
 
-        String stackString = resimUtils.doRESim(cmd);
-        if(stackString == null) {
-            Msg.error(this, "Failed to get reStack json from RESim");
-        }
-
-        Object stack_json = Json.getJson(stackString);
-        Msg.info(this, stackString);
-        java.util.List<Object> reStack = (java.util.ArrayList<Object>) stack_json;
-        int index = 0;
-        for(Object o : reStack){
-            HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
-            add(entry, index);
-            index++;
-        }
+        resimUtils.doRESim(cmd).thenApply(stack_string ->{
+            Object stack_json = Json.getJson(stack_string);
+            Msg.info(this, stack_string);
+            java.util.List<Object> reStack = (java.util.ArrayList<Object>) stack_json;
+            int index = 0;
+            for(Object o : reStack){
+                HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
+                add(entry, index);
+                index++;
+            }
+            actionRefresh.setEnabled(true);
+            return stack_string;
+        });
     }
     
 }

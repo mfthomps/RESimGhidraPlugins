@@ -266,11 +266,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
                 }
                 int index = myActionContext.getRow().getIndex();
                 String cmd = "goToDataMark("+index+")";
-                try {
-                    String result = resimUtils.doRESimRefresh(cmd);
-                }catch(Exception error) {
-                    error.printStackTrace();
-                }
+                resimUtils.doRESimRefresh(cmd);
 
             }
 
@@ -335,7 +331,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
     }
 
     protected void updateSubTitle() {
-        setSubTitle(computeSubTitle());
+        //setSubTitle(computeSubTitle());
     }
 
 
@@ -393,21 +389,24 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         String cmd = "getWatchMarks()";
         //println("cmd is "+cmd);
 
-        String watchString = resimUtils.doRESim(cmd);
-        if(watchString == null) {
-            Msg.error(this, "Failed to get watchMarks json from RESim");
-        }
-
-        Object watch_json = Json.getJson(watchString);
-        java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
-        int index = 0;
-        for(Object o : watchMarks){
-            HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
-            add(entry, index);
-            index++;
-        }
-        actionRefresh.setEnabled(true);
-
+        resimUtils.doRESim(cmd).thenApply(watch_string ->{
+            if(watch_string == null) {
+                Msg.error(this, "Failed to get watchMarks json from RESim");
+                return null;
+            }
+       
+            Object watch_json = Json.getJson(watch_string);
+            java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
+            int index = 0;
+            for(Object o : watchMarks){
+                HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
+                add(entry, index);
+                index++;
+            }
+            actionRefresh.setEnabled(true);
+            return watch_string;
+        });
+        
     }
     
 }

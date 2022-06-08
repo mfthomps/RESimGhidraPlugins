@@ -49,6 +49,7 @@ import ghidra.util.table.GhidraTableFilterPanel;
 import ghidra.framework.plugintool.PluginTool;
 
 import resim.utils.RESimUtilsPlugin;
+import resim.utils.RevToCursorAction;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 import resim.utils.RESimResources.*;
@@ -163,9 +164,12 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             String bookmark = JOptionPane.showInputDialog("Bookmark Name?");
             String cmd = "setDebugBookmark('"+bookmark+"')";
             Msg.debug(this,  "Add bookmark is "+cmd);
-            String stuff = resimUtils.doRESim(cmd);
-            Msg.debug(this,  "resim said "+stuff);
-            refresh();
+            resimUtils.doRESim(cmd).thenApply(stuff ->{
+                Msg.debug(this,  "resim said "+stuff);
+                resimUtils.addMessage(stuff);
+                refresh();
+                return stuff;
+            });
         }
 
         @Override
@@ -243,7 +247,6 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         buildMainPanel();
 
         setDefaultWindowPosition(WindowPosition.BOTTOM);
-        createActions();
 
         setVisible(true);
         contextChanged();
@@ -252,6 +255,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             Msg.error(this, "Failed to get RESimUtils.");
             return;
         }
+        createActions();
         resimUtils.registerInit(this);
     }
 
@@ -285,11 +289,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
                 }
                 int index = myActionContext.getRow().getIndex();
                 String cmd = "goToDebugBookmark("+index+")";
-                try {
-                    String result = resimUtils.doRESimRefresh(cmd);
-                }catch(Exception error) {
-                    error.printStackTrace();
-                }
+                resimUtils.doRESimRefresh(cmd);
 
             }
 
@@ -331,6 +331,8 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         actionRefresh = new RefreshAction();
         actionAdd = new AddAction();
 
+        RevToCursorAction revTrackAddrAction = new RevToCursorAction("Rev track address", "revTaintAddr", resimUtils, this);
+        tool.addAction(revTrackAddrAction);
     }
 
     @Override
@@ -352,7 +354,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     }
 
     protected void updateSubTitle() {
-        setSubTitle(computeSubTitle());
+        //setSubTitle(computeSubTitle());
     }
 
 
@@ -405,7 +407,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     public void refresh(){
         Msg.debug(this, "refresh bookmarks");
         if(resimUtils == null) {
-            Msg.out("call to get RESimUtils");
+            Msg.debug(this,"call to get RESimUtils");
             System.out.println("call to getRESimUtils");
             resimUtils = RESimUtilsPlugin.getRESimUtils(tool);
         }
@@ -416,42 +418,26 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
 
         clear();
         String cmd = "getBookmarksJson()";
-
-        String bookString = resimUtils.doRESim(cmd);
-        if(bookString == null) {
-            Msg.error(this, "Failed to get bookMarks json from RESim");
-            return;
-        }
-        Msg.debug(this, "bookmark json:"+bookString);
-        Object watch_json = Json.getJson(bookString);
-        java.util.List<Object> bookMarks = (java.util.ArrayList<Object>) watch_json;
-        int index = 0;
-        for(Object o : bookMarks){
-            HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
-            add(entry, index);
-            index++;
-        }
-        actionRefresh.setEnabled(true);
-        /*
-        Msg.debug(this,"bookmark string: "+bookString);
-        String[] lines = bookString.split("\r?\n|\r");
-        int index = 0;
-        String backtrack = "backtrack";
-        String start = "START";
-        for(String line : lines) {
-            if(line.contains(":")) {
-                index = index+1;
-                String[] parts = line.split(":");
-                String entry = parts[1].trim();
-                if(parts[1].startsWith(backtrack) &! entry.contains(start)) {
-                    entry = "<<<"+entry.substring(backtrack.length());
-                }
-                add(entry, index);              
+        Msg.debug(this,  "refresh about to call resimUtils");
+        resimUtils.doRESim(cmd).thenApply(book_string -> {
+            if(book_string == null) {
+                Msg.error(this, "Failed to get bookMarks json from RESim");
+                return null;
             }
-        }
-        */
-        actionAdd.setEnabled(true);
-        actionRefresh.setEnabled(true);
+            Msg.debug(this, "bookmark json:"+book_string);
+            Object watch_json = Json.getJson(book_string);
+            java.util.List<Object> bookMarks = (java.util.ArrayList<Object>) watch_json;
+            int index = 0;
+            for(Object o : bookMarks){
+                HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
+                add(entry, index);
+                index++;
+            }
+            actionRefresh.setEnabled(true);
+            actionAdd.setEnabled(true);
+            actionRefresh.setEnabled(true);
+            return book_string;
+        });
 
     }
     

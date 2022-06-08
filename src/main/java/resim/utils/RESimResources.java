@@ -7,7 +7,9 @@ import docking.action.DockingAction;
 import ghidra.framework.plugintool.Plugin;
 import ghidra.util.HelpLocation;
 import resources.ResourceManager;
-
+/*
+ * RESim resources, e.g., for associating actions with icons on plugin panels
+ */
 public interface RESimResources {
     ImageIcon ICON_REFRESH = ResourceManager.loadImage("images/view-refresh.png");
     ImageIcon ICON_ADD = ResourceManager.loadImage("images/add.png");
@@ -35,4 +37,15 @@ public interface RESimResources {
             setHelpLocation(new HelpLocation(owner.getName(), HELP_ANCHOR));
         }
     }
+    abstract class AbstractRevStepAction extends DockingAction {
+        public static final String NAME = "Reverse step";
+        public static final Icon ICON = ICON_REFRESH;
+        public static final String HELP_ANCHOR = "revstep";
+
+        public AbstractRevStepAction(Plugin owner) {
+            super(NAME, owner.getName());
+            setDescription("Reverse step into");
+            setHelpLocation(new HelpLocation(owner.getName(), HELP_ANCHOR));
+        }
+    } 
 }

@@ -16,6 +16,7 @@
 package resim.utils;
 
 import java.awt.event.KeyEvent;
+import java.util.concurrent.CompletableFuture;
 
 import docking.action.KeyBindingData;
 import docking.action.MenuData;
@@ -32,11 +33,11 @@ import ghidra.util.Msg;
 
  * Action in RESimUtils.
  */
-class RevToCursorAction extends ListingContextAction {
+public class RevToCursorAction extends ListingContextAction {
     /** the plugin associated with this action. */
     RESimUtilsPlugin plugin;
-
-
+    String cmd;
+    RESimProvider refresh;
 
     /**
      * Create a new action, to create a function at the current location with a selection
@@ -45,14 +46,16 @@ class RevToCursorAction extends ListingContextAction {
      * @param resimUtils does checking for this action
 
      */
-    public RevToCursorAction(String name, RESimUtilsPlugin plugin) {
+    public RevToCursorAction(String name, String cmd, RESimUtilsPlugin plugin, RESimProvider refresh) {
         super(name, plugin.getName());
         this.plugin = plugin;
+        this.cmd = cmd;
+        this.refresh = refresh;
 
 
             // top-level item usable most places
             setPopupMenuData(
-                new MenuData(new String[] { name }, null, RESimUtilsPlugin.RESIM_MENU_SUBGROUP,
+                new MenuData(new String[] { "Resim", name }, null, RESimUtilsPlugin.RESIM_MENU_SUBGROUP,
                     MenuData.NO_MNEMONIC, RESimUtilsPlugin.RESIM_SUBGROUP_BEGINNING));
 
 
@@ -80,10 +83,19 @@ class RevToCursorAction extends ListingContextAction {
             return;
         }
         long addr = entry.getOffset();
-        String cmd = "revToAddr("+addr+")";
-        Msg.debug(this, "In actionPerformed will do cmd: "+cmd);
+        //String cmd = "revToAddr("+addr+")";
+        String full_cmd = this.cmd+"("+addr+")";
+        Msg.debug(this, "In actionPerformed will do cmd: "+full_cmd);
         try {
-            plugin.doRESimRefresh(cmd);
+            CompletableFuture<String> dog = plugin.doRESimRefresh(full_cmd);
+            dog.thenApply(result -> {
+                Msg.debug(this, "actionPerformed, did revToAddr, resim says "+result);
+                plugin.refreshClient(true);
+                if(this.refresh != null){
+                    this.refresh.refresh();
+                }
+                return result;
+            });
         } catch (Exception e) {
             Msg.error(this, plugin.getExceptString(e));
         }

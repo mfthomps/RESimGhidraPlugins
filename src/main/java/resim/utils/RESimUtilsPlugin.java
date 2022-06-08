@@ -4,6 +4,8 @@ import agent.gdb.manager.impl.GdbManagerImpl;
 import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.model.impl.GdbModelImpl;
 import agent.gdb.pty.PtyFactory;
+import docking.ActionContext;
+import docking.action.ToolBarData;
 import docking.action.builder.ActionBuilder;
 
 import java.lang.reflect.Field;
@@ -14,8 +16,8 @@ import java.util.List;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.debug.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
-import ghidra.app.plugin.core.debug.event.TraceActivatedPluginEvent;
 import ghidra.app.plugin.core.debug.event.*;
+import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
 import ghidra.app.services.DebuggerModelService;
@@ -26,10 +28,12 @@ import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.program.model.address.Address;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.dbg.DebuggerObjectModel;
+import ghidra.dbg.target.TargetObject;
 import ghidra.dbg.target.TargetRegisterBank;
 import ghidra.dbg.util.ShellUtils;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
+import ghidra.util.Swing;
 import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.ProgramManager;
@@ -39,6 +43,9 @@ import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.DefaultTraceLocation;
 import ghidra.trace.model.Trace;
 import ghidra.util.database.UndoableTransaction;
+import resim.utils.RESimResources.AbstractRefreshAction;
+import resim.utils.RESimResources.AbstractRevStepAction;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread;
@@ -53,6 +60,7 @@ import com.google.common.collect.Range;
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //
             TraceSelectionPluginEvent.class, //
+            TraceRecorderAdvancedPluginEvent.class, //
 
         }, //
         servicesRequired = { //
@@ -71,13 +79,13 @@ public class RESimUtilsPlugin extends Plugin {
         public final static String RESIM_MENU_PULLRIGHT = "RESim";
         public final static String RESIM_SUBGROUP_MIDDLE = "M_Middle";
         public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
-        private RevToCursorAction revToCursorAction;
         private ArrayList<RESimProvider> refreshProviders;
         private ArrayList<RESimProvider> initProviders;
         public final static String MENU_RESIM = "&RESim";
         protected RESimUtilsProvider provider;
         private boolean didMapping = false;
         private Trace currentTrace = null;
+        protected RESimUtilsPlugin plugin = this;
  
         /**
          * Construct the RESimUtils plugin.
@@ -152,30 +160,45 @@ public class RESimUtilsPlugin extends Plugin {
          * Refresh the gdb client state values.
          * 
          */
-        public void refreshClient() {
-            DebuggerObjectModel object_model;
-            DebuggerModelService model_service;
-            try {
-                model_service = tool.getService(DebuggerModelService.class);
-                object_model = model_service.getCurrentModel();
-                object_model.invalidateAllLocalCaches();
-            } catch (Exception e) {
-                Msg.error(this,  getExceptString(e));
+        public void refreshClient(boolean from_resim) {
+            if(from_resim) {
+                DebuggerObjectModel object_model;
+                DebuggerModelService model_service;
+                try {
+                    model_service = tool.getService(DebuggerModelService.class);
+                    object_model = model_service.getCurrentModel();
+                    object_model.invalidateAllLocalCaches();
+                } catch (Exception e) {
+                    Msg.error(this,  getExceptString(e));
+                    return;
+                }
+                DebuggerObjectsProvider dbo;
+                try {
+                    dbo = getDebuggerObjectsProvider();
+                    //DebuggerTraceManagerService traceManager =
+                    //        tool.getService(DebuggerTraceManagerService.class);
+                    //DebuggerCoordinates current = traceManager.getCurrent();
+                    //TargetObject target = model_service.getTarget(current.getTrace());
+                    //wtf.fetchElements(true);
+                    //dbo.refresh(wtf);
+                    //refreshTraces();
+                    dbo.refresh("Threads");
+                    dbo.getTraceManager().getCurrent();
+                    Msg.debug(this, "refreshClient did refresh of debugger");
+                } catch (Exception e) {
+                    Msg.error(this,  getExceptString(e));
+                }
+                //Msg.debug(this,  "refreshClient do ghidra regs");
+                //ghidraRegs();
+                //refreshRegisters();
             }
-            DebuggerObjectsProvider dbo;
-            try {
-                dbo = getDebuggerObjectsProvider();
-                dbo.refresh();
-                dbo.getTraceManager().getCurrent();
-                Msg.debug(this, "refreshClient did refresh of debugger");
-            } catch (Exception e) {
-                Msg.error(this,  getExceptString(e));
-            }
-            Msg.debug(this,  "do ghidra regs");
-            //ghidraRegs();
-            refreshRegisters();
             for(RESimProvider provider : refreshProviders) {
+                Msg.debug(this, "refreshClient refresh a provider"); 
                 provider.refresh();
+            }
+            if(from_resim) {
+                Swing.runIfSwingOrRunLater(
+                    () -> refreshRegisters());       
             }
         }
         public Address addr(long addr) {
@@ -187,24 +210,27 @@ public class RESimUtilsPlugin extends Plugin {
             AddressSpace statRam = program.getAddressFactory().getDefaultAddressSpace();
             return statRam.getAddress(addr);
         }
-
-        public String doRESimRefresh(String cmd){
+        public void addMessage(String msg) {
+            provider.addMessage("RESim:", msg);
+        }
+        public CompletableFuture<String> doRESimRefresh(String cmd){
             /**
              * Use the gdb monitor to send a command to RESim and refresh the client when done.
              * @param cmd Command to execute
              * @return The response from RESim
              */
             Msg.debug(this,"doRESimRefresh do cmd: "+cmd);
-            String retval = doRESim(cmd);
-            if(retval != null) {
-                Msg.debug(this, "doRESimRefresh did command, now refresh client.");
-                refreshClient();
-            }else{
-                Msg.error(this, "doRESimRefresh got null from refreshClient.");
-            }
+            CompletableFuture<String> retval = doRESim(cmd).thenApply(result ->{
+                if(result != null){
+                    Msg.debug(this, "doRESimRefresh did command, refresh client.");
+                    addMessage(result);
+                    refreshClient(true);
+                }
+                return result;
+            });
             return retval;
         }
-        public String doRESim(String cmd) {
+        public CompletableFuture<String> doRESim(String cmd) {
             /**
              * Use the gdb monitor to send a command to RESim
              * @param cmd Command to execute
@@ -212,31 +238,13 @@ public class RESimUtilsPlugin extends Plugin {
              */
             return doGdbCmd("monitor @cgc."+cmd);
         }
-        public String doGdbCmd(String full_cmd) {
+        public CompletableFuture<String> doGdbCmd(String full_cmd) {
             /**
              * Send a command to the GDB console.
              * @param cmd Command to execute
              * @return The response from GDB
              */
-            String retval = null;
-            CompletableFuture<String> future = impl.consoleCapture(full_cmd, CompletesWithRunning.CANNOT);
-
-            
-            try {
-                retval = future.get();
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                Msg.error(this, "Failed resim command, interruptedException:"+full_cmd);
-            } catch (ExecutionException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                Msg.error(this,"Failed to resim command, execution exception:"+full_cmd);
-                Msg.error(this,  getExceptString(e));
-            }
-            
-            Msg.info(this,  "Done with doGdbCmd");
-            return retval;
+            return impl.consoleCapture(full_cmd, CompletesWithRunning.CANNOT);
         }
         /**
          * Get the current Ghidra debugger trace, may sleep up to 10 seconds if no trace is found.
@@ -326,14 +334,15 @@ public class RESimUtilsPlugin extends Plugin {
              *
              */
             String cmd = "getSOMap()";
-            String soJson = doRESim(cmd);
-            if(soJson != null) {
-                parseSO(soJson);
-                didMapping = true;
-            }else {
-                Msg.error(this,  "Failed to getSOMap");
-                
-            }
+            doRESim(cmd).thenApply(so_json ->{
+                if(so_json != null) {
+                    parseSO(so_json);
+                    didMapping = true;
+                }else {
+                    Msg.error(this,  "Failed to getSOMap");
+                }
+                return so_json;
+            });
         }
         public CompletableFuture<? extends GdbModelImpl> build() {
             /**
@@ -353,12 +362,10 @@ public class RESimUtilsPlugin extends Plugin {
         }
         public void attachDebug() {
             CompletableFuture <? extends GdbManagerImpl>gdb_manager = createDebug();
-            gdb_manager.thenApply(m -> {
-               String s = "dog";
-               this.impl = m;
+            gdb_manager.thenApply(manager -> {
+               this.impl = manager;
                CompletableFuture<String> target = attachTarget();
-               //doRest();
-               return m;
+               return manager;
             });
         }
         public CompletableFuture<? extends GdbManagerImpl> createDebug() {
@@ -417,7 +424,7 @@ public class RESimUtilsPlugin extends Plugin {
             String cmd = "target remote mft-ref:9123";
             
 
-            CompletableFuture<String> target_results = impl.consoleCapture(cmd, CompletesWithRunning.CAN);
+            CompletableFuture<String> target_results = impl.consoleCapture(cmd, CompletesWithRunning.CANNOT);
             Msg.debug(this, "attachDebug, no do thenApply?");
             /*
             try {
@@ -429,6 +436,7 @@ public class RESimUtilsPlugin extends Plugin {
             */
             CompletableFuture<String> result = target_results.thenApply(s -> {
                 Msg.debug(this, "in thenapply...");
+                provider.initConsole();
                 return s;
             });
              
@@ -443,7 +451,7 @@ public class RESimUtilsPlugin extends Plugin {
             // we want to put all function pull-right menus in the same group
             tool.setMenuGroup(new String[] { RESIM_MENU_PULLRIGHT }, RESIM_MENU_SUBGROUP,
                 RESIM_SUBGROUP_MIDDLE);
-            revToCursorAction = new RevToCursorAction("Rev to Cursor", this);
+            RevToCursorAction revToCursorAction = new RevToCursorAction("Rev to cursor", "revToAddr", this, null);
             tool.addAction(revToCursorAction);
             
             tool.setMenuGroup(new String[] { MENU_RESIM, "RESim" }, "first");
@@ -452,7 +460,16 @@ public class RESimUtilsPlugin extends Plugin {
                 .menuGroup(MENU_RESIM, "Attach")
                 .onAction(c -> attachDebug())
                 .buildAndInstall(tool);
-
+            new ActionBuilder("Reverse step into", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-into")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse")
+                .onAction(c -> revStep(true))
+                .buildAndInstall(tool);
+            new ActionBuilder("Reverse step over", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-over")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse")
+                .onAction(c -> revStep(false))
+                .buildAndInstall(tool);
 
         }
         public static RESimUtilsPlugin getRESimUtils(PluginTool tool) {
@@ -545,8 +562,10 @@ public class RESimUtilsPlugin extends Plugin {
         public void processEvent(PluginEvent event) {
             super.processEvent(event);
             if (event instanceof TraceActivatedPluginEvent) {
-                Msg.debug(this,  "is TraceActivatedPluginEven");
-
+                Msg.debug(this,  "is TraceActivatedPluginEvent");
+                if(connected()) {
+                    refreshClient(false);
+                }
             }else if(event instanceof TraceSelectionPluginEvent) {
                 Msg.debug(this,  "is traceSelection");
                 if(!didMapping && impl != null) {
@@ -555,15 +574,19 @@ public class RESimUtilsPlugin extends Plugin {
                     doRest();
                     doMapping();
                 }
+            }else if(event instanceof TraceRecorderAdvancedPluginEvent) {
+                Msg.debug(this,  "is trace advanced event");
+               // refreshRegisters();
+
             }else {
                 Msg.debug(this,  "plugin event is "+event.getEventName());
             }
             
         }
-
-        public void refreshRegisters() {
+        public void refreshTraces() {
             //Thanks to nsadeveloper789!
             // There is no need to fish this from the ObjectUpdateService, you can get it directly
+            Msg.debug(this, "refreshTraces");
             DebuggerModelService modelService = tool.getService(DebuggerModelService.class);
             // The current model is retrieved with one method, no need to stream or filter
             DebuggerObjectModel model = modelService.getCurrentModel();
@@ -571,20 +594,55 @@ public class RESimUtilsPlugin extends Plugin {
                     tool.getService(DebuggerTraceManagerService.class);
             // There are also getCurreentTrace(), etc., if you want just the one thing
             DebuggerCoordinates current = traceManager.getCurrent();
+            Msg.debug(this, "refreshTraces got current");
 
             // Now, we need to get the relevant recorder
             TraceRecorder recorder = modelService.getRecorder(current.getTrace());
+            if(recorder == null) {
+                Msg.debug(this,  "No recorder yet, skip refreshRegisters");
+                return;
+            }
+            recorder.getTarget().invalidateCaches();
+            recorder.getTarget().fetchElements(true);
+
+            Msg.debug(this, "refreshTraces all done");
+        }
+        public void refreshRegisters() {
+            //Thanks to nsadeveloper789!
+            // There is no need to fish this from the ObjectUpdateService, you can get it directly
+            Msg.debug(this, "refreshRegisters");
+            DebuggerModelService modelService = tool.getService(DebuggerModelService.class);
+            // The current model is retrieved with one method, no need to stream or filter
+            DebuggerObjectModel model = modelService.getCurrentModel();
+            DebuggerTraceManagerService traceManager =
+                    tool.getService(DebuggerTraceManagerService.class);
+            // There are also getCurreentTrace(), etc., if you want just the one thing
+            DebuggerCoordinates current = traceManager.getCurrent();
+            Msg.debug(this, "refreshRegisters got current");
+
+            // Now, we need to get the relevant recorder
+            TraceRecorder recorder = modelService.getRecorder(current.getTrace());
+            if(recorder == null) {
+                Msg.debug(this,  "No recorder yet, skip refreshRegisters");
+                return;
+            }
             // There's a chance of an NPE here if there is no "current frame"
             TargetRegisterBank bank =
                 recorder.getTargetRegisterBank(current.getThread(), current.getFrame());
+            Msg.debug(this, "refreshRegisters got thread");
+           
             // Now do the same to the bank as before
             try {
+                Msg.debug(this, "refreshRegistrs invalidate caches");
                 bank.invalidateCaches().get();
+                Msg.debug(this, "refreshRegistrs fetch elements");
                 bank.fetchElements(true).get();
+                Msg.debug(this, "refreshRegistrs done");
+
             } catch (InterruptedException | ExecutionException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                Msg.error(this,  getExceptString(e));
             }
+            Msg.debug(this, "refreshRegisters all done");
         }
         public boolean connected() {
            if(impl != null) {
@@ -593,5 +651,37 @@ public class RESimUtilsPlugin extends Plugin {
                return false;
             }
         }
+        protected class RevStepAction extends AbstractRevStepAction {
+            public static final String GROUP = DebuggerResources.GROUP_CONTROL;
+
+            public RevStepAction() {
+                super(plugin);
+                setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+                provider.addLocalAction(this);
+                setEnabled(false);
+            }
+
+            @Override
+            public void actionPerformed(ActionContext context) {
+                revStep(true);
+            }
+
+            @Override
+            public boolean isEnabledForContext(ActionContext context) {
+
+                return true;
+            }
+        }
+        protected void revStep(boolean step_into) {
+            String cmd = null;
+            Msg.debug(this,  "revStep");
+            if(step_into){
+                cmd = "reverseToCallInstruction(True)";
+            }else{
+                cmd = "reverseToCallInstruction(False)";
+            }
+            doRESimRefresh(cmd);
+        }
+ 
         
 }
