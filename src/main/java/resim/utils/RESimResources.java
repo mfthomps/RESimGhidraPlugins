@@ -14,6 +14,8 @@ public interface RESimResources {
     ImageIcon ICON_REFRESH = ResourceManager.loadImage("images/view-refresh.png");
     ImageIcon ICON_ADD = ResourceManager.loadImage("images/add.png");
     ImageIcon ICON_RETOP = ResourceManager.loadImage("images/retop.png");
+    ImageIcon ICON_RESTEPINTO = ResourceManager.loadImage("images/revstepinto.png");
+    ImageIcon ICON_RESTEPOVER = ResourceManager.loadImage("images/revstepover.png");
 
     abstract class AbstractRefreshAction extends DockingAction {
         public static final String NAME = "Step Trace Snap Forward";
@@ -37,14 +39,25 @@ public interface RESimResources {
             setHelpLocation(new HelpLocation(owner.getName(), HELP_ANCHOR));
         }
     }
-    abstract class AbstractRevStepAction extends DockingAction {
-        public static final String NAME = "Reverse step";
-        public static final Icon ICON = ICON_REFRESH;
+    abstract class AbstractRevStepIntoAction extends DockingAction {
+        public static final String NAME = "Reverse step into";
+        public static final Icon ICON = ICON_RESTEPINTO;
         public static final String HELP_ANCHOR = "revstep";
 
-        public AbstractRevStepAction(Plugin owner) {
+        public AbstractRevStepIntoAction(Plugin owner) {
             super(NAME, owner.getName());
             setDescription("Reverse step into");
+            setHelpLocation(new HelpLocation(owner.getName(), HELP_ANCHOR));
+        }
+    } 
+    abstract class AbstractRevStepOverAction extends DockingAction {
+        public static final String NAME = "Reverse step over";
+        public static final Icon ICON = ICON_RESTEPOVER;
+        public static final String HELP_ANCHOR = "revstep";
+
+        public AbstractRevStepOverAction(Plugin owner) {
+            super(NAME, owner.getName());
+            setDescription("Reverse step over");
             setHelpLocation(new HelpLocation(owner.getName(), HELP_ANCHOR));
         }
     } 
