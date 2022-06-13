@@ -49,7 +49,7 @@ import ghidra.util.table.GhidraTableFilterPanel;
 import ghidra.framework.plugintool.PluginTool;
 
 import resim.utils.RESimUtilsPlugin;
-import resim.utils.RevToCursorAction;
+import resim.utils.RESimCursorAction;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 import resim.utils.RESimResources.*;
@@ -331,7 +331,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         actionRefresh = new RefreshAction();
         actionAdd = new AddAction();
 
-        RevToCursorAction revTrackAddrAction = new RevToCursorAction("Rev track address", "revTaintAddr", resimUtils, this);
+        RESimCursorAction revTrackAddrAction = new RESimCursorAction("Rev track address", "revTaintAddr", resimUtils, this);
         tool.addAction(revTrackAddrAction);
     }
 
