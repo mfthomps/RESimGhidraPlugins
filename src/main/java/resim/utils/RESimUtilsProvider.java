@@ -39,7 +39,8 @@ import ghidra.program.model.symbol.SymbolTable;
 import ghidra.util.*;
 import resim.bookmarks.RESimBookMarksPlugin;
 import resim.utils.RESimResources.AbstractAddAction;
-import resim.utils.RESimResources.AbstractRevStepAction;
+import resim.utils.RESimResources.AbstractRevStepIntoAction;
+import resim.utils.RESimResources.AbstractRevStepOverAction;
 import resources.ResourceManager;
 
 public class RESimUtilsProvider extends ComponentProviderAdapter
@@ -70,11 +71,12 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     private PrintWriter stdin;
     private Program currentProgram;
     private RESimUtilsPlugin resimUtils; 
-    private RevStepAction revStepAction;
-    protected class RevStepAction extends AbstractRevStepAction {
+    private RevStepIntoAction revStepIntoAction;
+    private RevStepOverAction revStepOverAction;
+    protected class RevStepIntoAction extends AbstractRevStepIntoAction {
         public static final String GROUP = DebuggerResources.GROUP_CONTROL;
 
-        public RevStepAction(RESimUtilsPlugin resimUtils) {
+        public RevStepIntoAction(RESimUtilsPlugin resimUtils) {
             super(resimUtils);
             setToolBarData(new ToolBarData(ICON, GROUP, "4"));
             addLocalAction(this);
@@ -95,8 +97,33 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
             return retval;
         }
     }
+    protected class RevStepOverAction extends AbstractRevStepOverAction {
+        public static final String GROUP = DebuggerResources.GROUP_CONTROL;
+
+        public RevStepOverAction(RESimUtilsPlugin resimUtils) {
+            super(resimUtils);
+            setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+            addLocalAction(this);
+            setEnabled(false);
+        }
+
+        @Override
+        public void actionPerformed(ActionContext context) {
+            resimUtils.revStep(false);
+        }
+
+        @Override
+        public boolean isEnabledForContext(ActionContext context) {
+            boolean retval = false;
+            if(resimUtils != null) {
+                retval = resimUtils.connected();
+            }       
+            return retval;
+        }
+    }
     public void initConsole() {
-        revStepAction.setEnabled(true);
+        revStepIntoAction.setEnabled(true);
+        revStepOverAction.setEnabled(true);
         addMessage("RESim",  "Connected");
     }
     public RESimUtilsProvider(RESimUtilsPlugin plugin) {
@@ -307,8 +334,12 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
             }
         };
         clearAction.setDescription("Clear Console");
-        revStepAction = new RevStepAction(resimUtils);
-
+        revStepIntoAction = new RevStepIntoAction(resimUtils);
+        revStepIntoAction.setKeyBindingData(new KeyBindingData(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F8, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
+        revStepOverAction = new RevStepOverAction(resimUtils);
+        revStepOverAction.setKeyBindingData(new KeyBindingData(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F10, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
 // ACTIONS - auto generated
         clearAction.setToolBarData(new ToolBarData(ResourceManager.loadImage(CLEAR_GIF), null));
 
