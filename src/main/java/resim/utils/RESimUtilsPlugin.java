@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import javax.swing.KeyStroke;
+import javax.swing.JOptionPane;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -32,6 +33,7 @@ import ghidra.app.services.DebuggerModelService;
 
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import ghidra.framework.preferences.Preferences;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressRangeImpl;
@@ -91,6 +93,7 @@ public class RESimUtilsPlugin extends Plugin {
         public final static String RESIM_MENU_PULLRIGHT = "RESim";
         public final static String RESIM_SUBGROUP_MIDDLE = "M_Middle";
         public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
+        public final static String RESIM_HOST_PORT = "RESIM_HOST_PORT";
         private ArrayList<RESimProvider> refreshProviders;
         private ArrayList<RESimProvider> initProviders;
         public final static String MENU_RESIM = "&RESim";
@@ -111,6 +114,7 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.debug(this,  "in resimutils plugin");
                 refreshProviders = new ArrayList<RESimProvider>();
                 initProviders = new ArrayList<RESimProvider>();
+                
                 
         }
         @Override
@@ -188,22 +192,14 @@ public class RESimUtilsPlugin extends Plugin {
                 DebuggerObjectsProvider dbo;
                 try {
                     dbo = getDebuggerObjectsProvider();
-                    //DebuggerTraceManagerService traceManager =
-                    //        tool.getService(DebuggerTraceManagerService.class);
-                    //DebuggerCoordinates current = traceManager.getCurrent();
-                    //TargetObject target = model_service.getTarget(current.getTrace());
-                    //wtf.fetchElements(true);
-                    //dbo.refresh(wtf);
-                    //refreshTraces();
+
                     dbo.refresh("Threads");
                     dbo.getTraceManager().getCurrent();
                     Msg.debug(this, "refreshClient did refresh of debugger");
                 } catch (Exception e) {
                     Msg.error(this,  getExceptString(e));
                 }
-                //Msg.debug(this,  "refreshClient do ghidra regs");
-                //ghidraRegs();
-                //refreshRegisters();
+
             }
             if(from_resim) {
                 Swing.runIfSwingOrRunLater(
@@ -309,12 +305,16 @@ public class RESimUtilsPlugin extends Plugin {
 
             Msg.debug(this,"did hash parseSO\n");
             Msg.debug(this,"size of hashmap is "+ somap.size());
-            addModules(somap);    
+            addModule(somap);    
             
         }
-        protected void addModules(java.util.HashMap<Object, Object> somap){
+        protected void addModule(java.util.HashMap<Object, Object> somap){
+            /**
+             * Add a module and its sections, as defined by a RESim SO map json, to the Ghidra modules
+             * @param somap The json hashmap
+             */
             Long pid_o = (Long) somap.get("group_leader");
-            Msg.debug(this,"in parseSO y pid_o is "+pid_o);
+            Msg.debug(this,"in parseSO pid_o is "+pid_o);
             Long start = (Long) somap.get("prog_start");
             Long end = (Long) somap.get("prog_end");
             String path = (String) somap.get("prog");
@@ -324,28 +324,25 @@ public class RESimUtilsPlugin extends Plugin {
             TraceModule newmod = null;
             // TBD what should the range be?  Most recent snap?"
             Range <Long> r = Range.closed(0L, 9999999L);
-            Msg.debug(this,  "getModule manager");
             TraceModuleManager tm = currentTrace.getModuleManager();
-            Msg.debug(this,  "now call addModule");
             try (UndoableTransaction tid =
                     UndoableTransaction.start(currentTrace, "Add Module", true)) {
                 
                 try {
                     newmod = tm.addModule(path, name, ar, r);
-                    Msg.debug(this,  "back from addModulePath");
+                    //Msg.debug(this,  "back from addModulePath");
                 } catch (DuplicateNameException e1) {
                     Msg.debug(this, getExceptString(e1));
                 }
             }
 
-            Msg.debug(this, "bout to do sections?");
+            //Msg.debug(this, "bout to do sections?");
             ArrayList <java.util.HashMap<Object, Object>> sections=null;
             try {
                 sections = (ArrayList <java.util.HashMap<Object, Object>>) somap.get("sections");
             }catch (Exception e) {
                 Msg.debug(this, getExceptString(e));
             }
-            Msg.debug(this,  "value "+sections.toString());
             Msg.debug(this,  "parseSO, num sections is "+sections.size());
             for(Object o : sections) {
                 java.util.HashMap<Object, Object> section = (java.util.HashMap<Object, Object>) o;
@@ -354,7 +351,7 @@ public class RESimUtilsPlugin extends Plugin {
                 ar = new AddressRangeImpl(this.addrDyn(start), this.addrDyn(end));
                 path = (String) section.get("file");
                 name = FilenameUtils.getBaseName(path);
-                Msg.debug(this, "parseSO add section");
+                //Msg.debug(this, "parseSO add section");
                 try (UndoableTransaction tid =
                         UndoableTransaction.start(currentTrace, "Add Section", true)) {
                     
@@ -364,7 +361,7 @@ public class RESimUtilsPlugin extends Plugin {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
-                    Msg.debug(this, "parseSO back from add section");
+                    //Msg.debug(this, "parseSO back from add section");
                 }
             }
         }
@@ -456,6 +453,11 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.debug(this,"Finished initializing the registered plugins.");
             }         
         }
+        public void setHostPort() {
+            String host_port = Preferences.getProperty(RESIM_HOST_PORT);
+            host_port = JOptionPane.showInputDialog(null, "Enter host:port", host_port);
+            Preferences.setProperty(RESIM_HOST_PORT, host_port);
+        }
         public CompletableFuture<String> attachTarget() {
             Msg.debug(this,  "attachTarget");;
 
@@ -466,7 +468,14 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.error(this, "Failed to get GdbManager");
             }
             //String remote = askString("Remote server?", "Enter host of remote server:");
-            String cmd = "target remote mft-ref:9123";
+            //String cmd = "target remote mft-ref:9123";
+            String host_port = Preferences.getProperty(RESIM_HOST_PORT);
+
+            if(host_port == null){
+                Msg.error(this,  "Host:port is null?");
+                return null;
+            }  
+            String cmd = "target remote "+ host_port;
             
 
             CompletableFuture<String> target_results = impl.consoleCapture(cmd, CompletesWithRunning.CANNOT);
@@ -526,7 +535,11 @@ public class RESimUtilsPlugin extends Plugin {
                 .onAction(c -> revStep(false))
                 .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F10, InputEvent.CTRL_DOWN_MASK))
                 .buildAndInstall(tool);
-
+            new ActionBuilder("Define host:port", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Define host:port")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "host:port")
+                .onAction(c -> setHostPort())
+                .buildAndInstall(tool);
         }
         public static RESimUtilsPlugin getRESimUtils(PluginTool tool) {
             /**
