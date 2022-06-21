@@ -4,10 +4,8 @@ import agent.gdb.manager.impl.GdbManagerImpl;
 import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.model.impl.GdbModelImpl;
 import agent.gdb.pty.PtyFactory;
-import docking.ActionContext;
 import docking.DockingUtils;
 import docking.action.KeyBindingData;
-import docking.action.ToolBarData;
 import docking.action.builder.ActionBuilder;
 
 import java.lang.reflect.Field;
@@ -20,46 +18,47 @@ import javax.swing.JOptionPane;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.debug.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.event.*;
-import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
 import ghidra.app.services.DebuggerModelService;
-
-
+import ghidra.app.plugin.core.colorizer.*;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.framework.preferences.Preferences;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.dbg.DebuggerObjectModel;
-import ghidra.dbg.target.TargetObject;
 import ghidra.dbg.target.TargetRegisterBank;
 import ghidra.dbg.util.ShellUtils;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
 import ghidra.util.Swing;
-import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.ProgramManager;
 import ghidra.app.services.TraceRecorder;
 import ghidra.program.model.address.AddressSpace;
-import ghidra.program.util.ProgramLocation;
-import ghidra.trace.model.DefaultTraceLocation;
+import ghidra.program.model.block.BasicBlockModel;
+import ghidra.program.model.block.CodeBlock;
 import ghidra.trace.model.Trace;
 import ghidra.trace.model.modules.TraceModule;
 import ghidra.trace.model.modules.TraceModuleManager;
+import ghidra.trace.model.thread.TraceThread;
+import ghidra.trace.model.thread.TraceThreadManager;
 import ghidra.util.database.UndoableTransaction;
+import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
-
+import ghidra.util.task.TaskMonitor;
+import java.awt.Color;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread;
@@ -94,6 +93,7 @@ public class RESimUtilsPlugin extends Plugin {
         public final static String RESIM_SUBGROUP_MIDDLE = "M_Middle";
         public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
         public final static String RESIM_HOST_PORT = "RESIM_HOST_PORT";
+        public final static String RESIM_TARGET_ARCH = "RESIM_TARGET_ARCH";
         private ArrayList<RESimProvider> refreshProviders;
         private ArrayList<RESimProvider> initProviders;
         public final static String MENU_RESIM = "&RESim";
@@ -201,14 +201,18 @@ public class RESimUtilsPlugin extends Plugin {
                 }
 
             }
-            if(from_resim) {
-                Swing.runIfSwingOrRunLater(
-                    () -> refreshRegisters());       
-            }
+            
+
+            
             for(RESimProvider provider : refreshProviders) {
                 Msg.debug(this, "refreshClient refresh a provider"); 
                 provider.refresh();
             }
+            if(from_resim) {
+                
+                Swing.runIfSwingOrRunLater(
+                    () -> refreshRegisters());       
+            }           
         }
         public Address addr(long addr) {
             /**
@@ -222,6 +226,7 @@ public class RESimUtilsPlugin extends Plugin {
         public Address addrDyn(long addr) {
             AddressSpace dynRam = currentTrace.getBaseAddressFactory().getDefaultAddressSpace();
             return dynRam.getAddress(addr);
+            
         }
         public void addMessage(String msg) {
             provider.addMessage("RESim:", msg);
@@ -249,7 +254,16 @@ public class RESimUtilsPlugin extends Plugin {
              * @param cmd Command to execute
              * @return The response from RESim
              */
-            return doGdbCmd("monitor @cgc."+cmd);
+            return doGdbCmd("monitor @cgc."+cmd).thenApply(result -> {
+                String NONE = "\nNone";
+                result = result.trim();
+                if(result.endsWith(NONE)) {
+                    Msg.debug(this, "removing None"); 
+                    result = result.substring(0,(result.length()-NONE.length()));
+                    
+                }
+                return result;
+            });
         }
         public CompletableFuture<String> doGdbCmd(String full_cmd) {
             /**
@@ -383,13 +397,72 @@ public class RESimUtilsPlugin extends Plugin {
                 return so_json;
             });
         }
+        public void doThreads() {
+            /**
+             * Get thread information from RESim and add it to ghidra's threads.
+             *
+             */
+            Msg.debug(this,  "in doThreads");
+            String cmd = "getThreads()";
+            doRESim(cmd).thenApply(thread_json ->{
+                if(thread_json != null) {
+                    parseThreads(thread_json);
+                }else {
+                    Msg.error(this,  "Failed to getThreads");
+                }
+                return thread_json;
+            });
+        }
+        protected void parseThreads(String all_string){
+            Msg.debug(this,"in parseThreads json:");
+            Msg.debug(this,  all_string);
+            // TBD initialize trace from more logical location?
+            getCurrentTrace();
+            Object obj = Json.getJson(all_string);
+            if(obj == null){
+                Msg.debug(this,"parseThreads, Error getting json of threads");
+                return;
+            }
+            ArrayList <java.util.HashMap<Object, Object>> threads=null;
+            try {
+                threads = (ArrayList <java.util.HashMap<Object, Object>>) obj;
+            }catch (Exception e) {
+                Msg.debug(this, getExceptString(e));
+            }
+            try (UndoableTransaction tid =
+                    UndoableTransaction.start(currentTrace, "Get Thread", true)) {
+                    TraceThreadManager manager = currentTrace.getThreadManager();
+                    Collection<? extends TraceThread> all_threads = manager.getAllThreads();
+                    for(TraceThread t : all_threads) {
+                        Msg.debug(this,  "thread name "+t.getName()+" path "+t.getPath());
+                    }
+            }
+            for(java.util.HashMap<Object, Object> t : threads){
+                addThread(t);
+            }
+             
+        }
         public CompletableFuture<? extends GdbModelImpl> build() {
             /**
              * Create a GdbModelImpl and provide it with a gdb command line.
              *
              */
             // TBD Generalize, remove hardcoded paths.
-            String gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32";
+            Program p = getProgram();
+            String path = p.getExecutablePath();
+            Msg.debug(this,  "from getProgram, got "+path);
+            String target = Preferences.getProperty(RESIM_TARGET_ARCH);
+            Msg.debug(this,  "build, target is "+target);
+            String gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32 "+ path;
+
+            if(target != null &! target.equals("auto")){
+                //gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -ex \"set sysroot /home/mike/highpdc\" -ex \"set architecture "+target+"\" -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32 "+path;
+                gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -ex \"set architecture "+target+"\" -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32";
+                Msg.debug(this,  "found target, cmd is "+gdbCmd);
+            }else {
+                Msg.debug(this,  "gdbCmd: "+gdbCmd);
+            }
+            //String gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb";
             boolean existing = false;
 
             List<String> gdbCmdLine = ShellUtils.parseArgs(gdbCmd);
@@ -399,12 +472,24 @@ public class RESimUtilsPlugin extends Plugin {
                         gdbCmdLine.subList(1, gdbCmdLine.size()).toArray(String[]::new))
                     .thenApply(__ -> model);
         }
-        public void attachDebug() {
+        public void attachDebugxx() {
             CompletableFuture <? extends GdbManagerImpl>gdb_manager = createDebug();
             gdb_manager.thenApply(manager -> {
                this.impl = manager;
                CompletableFuture<String> target = attachTarget();
-               return manager;
+               return target;
+            });
+        }
+        public void attachDebug() {
+            CompletableFuture <? extends GdbManagerImpl>gdb_manager = createDebug();
+            gdb_manager.thenApply(manager -> {
+
+                   CompletableFuture<String> attach_result = attachTarget();
+                   return attach_result.thenApply(y -> {
+                       Msg.debug(this,  "no defined arch, do attach");
+                       return y;
+                   });                                 
+
             });
         }
         public CompletableFuture<? extends GdbManagerImpl> createDebug() {
@@ -458,17 +543,62 @@ public class RESimUtilsPlugin extends Plugin {
             host_port = JOptionPane.showInputDialog(null, "Enter host:port", host_port);
             Preferences.setProperty(RESIM_HOST_PORT, host_port);
         }
+        public void setTargetArch() {
+            String target = Preferences.getProperty(RESIM_TARGET_ARCH);
+            if(target == null) {
+                target = "auto";
+            }
+
+            Object[] choices = {"auto", "armv7"};
+            String s = (String)JOptionPane.showInputDialog(
+                    null,
+                    "Select target architecture:",
+                    "Target Selection",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    choices,
+                    target);
+            if(s != null) {
+                Preferences.setProperty(RESIM_TARGET_ARCH, s);
+                Msg.debug(this,  "target arch set to "+s);
+            }
+            
+        }
+        public CompletableFuture<String> setArch(){
+            /**
+             * NOT USED, seems to be a race condition?
+             */
+            String cmd = "show architecture";
+            CompletableFuture<String> show_results = impl.consoleCapture(cmd, CompletesWithRunning.CANNOT);
+            show_results.thenApply(x -> {
+                String show_arch = null;
+                try {
+                    show_arch = show_results.get();
+                } catch (InterruptedException | ExecutionException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+                Msg.debug(this,  "show arch results "+show_arch);
+                if(show_arch.contains("arm")) {
+                    Msg.debug(this, "setArch sees arm, make armv7");
+                    String set_cmd = "set architecture armv7";
+                    CompletableFuture<String> target_results = impl.consoleCapture(set_cmd, CompletesWithRunning.CANNOT);
+                    return target_results.thenApply(y -> {
+                        Msg.debug(this,  "setArch did set architecture "+target_results);
+                        return y;
+                    });                  
+                }else {
+                    return show_results;
+                }
+            });
+
+            return show_results;
+        }
         public CompletableFuture<String> attachTarget() {
             Msg.debug(this,  "attachTarget");;
-
-
-            //Msg.error(this, getExceptString(e));
-
             if(this.impl == null) {
                 Msg.error(this, "Failed to get GdbManager");
             }
-            //String remote = askString("Remote server?", "Enter host of remote server:");
-            //String cmd = "target remote mft-ref:9123";
             String host_port = Preferences.getProperty(RESIM_HOST_PORT);
 
             if(host_port == null){
@@ -480,14 +610,7 @@ public class RESimUtilsPlugin extends Plugin {
 
             CompletableFuture<String> target_results = impl.consoleCapture(cmd, CompletesWithRunning.CANNOT);
             Msg.debug(this, "attachDebug, no do thenApply?");
-            /*
-            try {
-                target_results.get();
-            } catch (InterruptedException | ExecutionException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            */
+
             CompletableFuture<String> result = target_results.thenApply(s -> {
                 Msg.debug(this, "in thenapply...");
                 provider.initConsole();
@@ -495,9 +618,6 @@ public class RESimUtilsPlugin extends Plugin {
             });
              
             Msg.debug(this,  "back from thenapply");
-            
-            //doGdbCmd(cmd);
-
             return target_results;
         }
 
@@ -517,6 +637,15 @@ public class RESimUtilsPlugin extends Plugin {
             
             tool.setMenuGroup(new String[] { MENU_RESIM, "RESim" }, "first");
 
+            RESimListingGoToAction lc = new RESimListingGoToAction("Goto address", this);
+            tool.addAction(lc);
+            /*
+            new ActionBuilder("Manual map", getName())
+                .menuPath(MENU_RESIM, "Manual map")
+                .menuGroup(MENU_RESIM, "map")
+                .onAction(c -> manualMap())
+                .buildAndInstall(tool);
+                */
             new ActionBuilder("Attach Simulation", getName())
                 .menuPath(MENU_RESIM, "Attach Simulation")
                 .menuGroup(MENU_RESIM, "Attach")
@@ -536,10 +665,26 @@ public class RESimUtilsPlugin extends Plugin {
                 .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F10, InputEvent.CTRL_DOWN_MASK))
                 .buildAndInstall(tool);
             new ActionBuilder("Define host:port", getName())
-                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Define host:port")
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define host:port")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "host:port")
                 .onAction(c -> setHostPort())
                 .buildAndInstall(tool);
+            new ActionBuilder("Set target arch", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Set target arch")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "target")
+                .onAction(c -> setTargetArch())
+                .buildAndInstall(tool);
+            new ActionBuilder("Color blocks", getName())
+            .menuPath(MENU_RESIM, "Color blocks")
+            .menuGroup(MENU_RESIM, "color")
+            .onAction(c -> colorBlocks())
+            .buildAndInstall(tool);
+            new ActionBuilder("Foo Bar", getName())
+            .menuPath(MENU_RESIM, "Foo bar")
+            .menuGroup(MENU_RESIM, "Foo")
+            .onAction(c -> fooBar())
+            .buildAndInstall(tool);
+
         }
         public static RESimUtilsPlugin getRESimUtils(PluginTool tool) {
             /**
@@ -674,6 +819,7 @@ public class RESimUtilsPlugin extends Plugin {
                 return;
             }
             // There's a chance of an NPE here if there is no "current frame"
+           
             TargetRegisterBank bank =
                 recorder.getTargetRegisterBank(current.getThread(), current.getFrame());
             Msg.debug(this, "refreshRegisters got thread");
@@ -709,6 +855,138 @@ public class RESimUtilsPlugin extends Plugin {
             }
             doRESimRefresh(cmd);
         }
- 
+        protected void addThread(java.util.HashMap<Object, Object> entry) {
+
+            Range <Long> r = Range.atLeast(0L);
+            try (UndoableTransaction tid =
+                    UndoableTransaction.start(currentTrace, "Add Thread", true)) {
+                try {
+                    TraceThreadManager manager = currentTrace.getThreadManager();
+                    Collection<? extends TraceThread> all_threads = manager.getAllThreads();
+                    for(TraceThread t : all_threads) {
+                        Msg.debug(this,  "thread name "+t.getName()+" path "+t.getPath());
+                    }
+                    String value = "pid: "+entry.get("pid");
+                    //TraceThread thread = manager.addThread(value, r);
+                    TraceThread thread = manager.createThread(value, 0);
+                    thread.setComment("call: "+entry.get("call"));
+                    thread.setCreationSnap(0);
+                    
+                } catch (DuplicateNameException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }
+        protected void manualMap() {
+            try {
+                getGdbManager();
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            this.doRest();
+            this.doMapping();
+        }
+
+        protected void colorBlocks() {
+            //doThreads();
+            Color new_hit_color = new Color(0x00ff00);
+            Color old_hit_color = new Color(0x00ffcc);
+            Color not_hit_color = new Color(0x00ffff);
+            Color pre_hit_color = new Color(0xccff00);
+            
+            ColorizingService colorizingService = tool.getService(ColorizingService.class);
+            String ida_data = System.getenv("RESIM_IDA_DATA");
+            if(ida_data == null) {
+                Msg.error(this,  "RESIM_IDA_DATA not defined");
+                return;
+            }
+            String hitspath = ida_data+File.separator+program.getName()+File.separator+program.getName();
+            String latest_hits_file = hitspath+".hits";
+            String all_hits_file = hitspath+".all.hits";
+            String pre_hits_file = hitspath+".pre.hits";
+            Object latest_json = Json.getJsonFromFile(latest_hits_file);
+            if(latest_json == null) {
+                Msg.error(this,  "color blocks failed to get json from "+latest_hits_file);
+                return;
+            }
+            ArrayList<Long> new_bb_list = (ArrayList<Long>) latest_json;
+            Object all_hits_json = Json.getJsonFromFile(all_hits_file);
+            ArrayList<Long> all_bb_list = null;
+            if(all_hits_json != null) {
+                all_bb_list = (ArrayList<Long>) all_hits_json;
+            }else {
+                all_bb_list = new ArrayList<Long>();
+            }
+            ArrayList<Long> pre_bb_list = null;
+            Object pre_hits_json = Json.getJsonFromFile(all_hits_file);
+            if(pre_hits_json != null) {
+                pre_bb_list = (ArrayList<Long>) pre_hits_json;
+            }else {
+                pre_bb_list = new ArrayList<Long>();
+            }
+            
+            BasicBlockModel bbm = new BasicBlockModel(program);
+            int id = program.startTransaction("Test - Color Change");
+            CodeBlock cb = null;
+            try {
+                for(Long bb : new_bb_list) {
+                    try {
+                        cb = bbm.getCodeBlockAt(addr(bb), TaskMonitor.DUMMY);
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                        Msg.error(this,  "color blocks cancled exception "+e.toString());
+                        return;
+                    }
+                    Color hit_color = old_hit_color;
+                    if(all_bb_list == null |! all_bb_list.contains(bb)) {
+                        hit_color = new_hit_color;
+                    }
+                    colorizingService.setBackgroundColor(cb.getMinAddress(), cb.getMaxAddress(), hit_color);
+                }
+               for(Long bb : all_bb_list) {
+                    if(new_bb_list.contains((bb))) {
+                        continue;
+                    }
+                    try {
+                        cb = bbm.getCodeBlockAt(addr(bb), TaskMonitor.DUMMY);
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                        Msg.error(this,  "color blocks cancled exception "+e.toString());
+                        return;
+                    }
+                    colorizingService.setBackgroundColor(cb.getMinAddress(), cb.getMaxAddress(), not_hit_color);
+                }
+                for(Long bb : all_bb_list) {
+                    if(new_bb_list.contains(bb) || all_bb_list.contains(bb)) {
+                        continue;
+                    }
+                    try {
+                        cb = bbm.getCodeBlockAt(addr(bb), TaskMonitor.DUMMY);
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                        Msg.error(this,  "color blocks cancled exception "+e.toString());
+                        return;
+                    }
+                    colorizingService.setBackgroundColor(cb.getMinAddress(), cb.getMaxAddress(), pre_hit_color);
+                }
+            } finally {
+                    program.endTransaction(id, true);
+            }
+
+            program.flushEvents();
+            //waitForBusyTool(tool);
+        }
+
+        protected void fooBar() {
+            
+            //doThreads();
+
+
+        }
         
 }

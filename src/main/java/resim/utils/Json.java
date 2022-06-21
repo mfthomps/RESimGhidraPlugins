@@ -1,8 +1,30 @@
 package resim.utils;
 import generic.json.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import ghidra.util.Msg;
 public class Json {
+        public static Object getJsonFromFile(String path) {
+            File file = new File(path);
+            String fstring = null;
+            Object retval = null;
+            if(file.exists()) {
+                Path fpath = Path.of(path);
+                try {
+                    fstring = Files.readString(fpath);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return null;
+                }
+                retval = Json.getJson(fstring);
+            }
+            return retval;
+        }
         public static Object getJson(String all_string){
             
             int start_dict = all_string.indexOf('{');
@@ -20,7 +42,7 @@ public class Json {
                 int end = all_string.lastIndexOf('}')+1;
                 jstring = all_string.substring(start_dict, end);
             }
-            //Msg.info(null, "in getJson string "+jstring);
+            Msg.info(null, "in getJson string "+jstring);
             char[] console_char = jstring.toCharArray();
                 JSONParser parser = new JSONParser();
                 List<Object> objs = new ArrayList<Object>();
