@@ -9,6 +9,9 @@ import docking.action.KeyBindingData;
 import docking.action.builder.ActionBuilder;
 
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -18,6 +21,7 @@ import javax.swing.JOptionPane;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import ghidra.app.plugin.PluginCategoryNames;
@@ -59,6 +63,7 @@ import java.awt.Color;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread;
@@ -94,6 +99,7 @@ public class RESimUtilsPlugin extends Plugin {
         public final static String RESIM_SUBGROUP_BEGINNING = "Begin";
         public final static String RESIM_HOST_PORT = "RESIM_HOST_PORT";
         public final static String RESIM_TARGET_ARCH = "RESIM_TARGET_ARCH";
+        public final static String RESIM_GDB_PATH = "RESIM_GDB_PATH";
         private ArrayList<RESimProvider> refreshProviders;
         private ArrayList<RESimProvider> initProviders;
         public final static String MENU_RESIM = "&RESim";
@@ -167,9 +173,15 @@ public class RESimUtilsPlugin extends Plugin {
         }
 
         private DebuggerObjectsProvider getDebuggerObjectsProvider() throws Exception {
-            DebuggerObjectsPlugin objects =
-                (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
-            return objects.getProvider(0);
+            DebuggerObjectsProvider dop = (DebuggerObjectsProvider) tool.getComponentProvider("Objects");
+            if(dop == null) {
+                Msg.debug(this,  "dop is none");
+                DebuggerObjectsPlugin objects =
+                    (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
+                return objects.getProvider(0);
+            }else {
+                return dop;
+            }
         }
 
         /**
@@ -191,15 +203,16 @@ public class RESimUtilsPlugin extends Plugin {
                 }
                 DebuggerObjectsProvider dbo;
                 try {
-                    dbo = getDebuggerObjectsProvider();
-
+                    //dbo = getDebuggerObjectsProvider();
+                    dbo = (DebuggerObjectsProvider) tool.getComponentProvider("Objects");
                     dbo.refresh("Threads");
                     dbo.getTraceManager().getCurrent();
                     Msg.debug(this, "refreshClient did refresh of debugger");
                 } catch (Exception e) {
                     Msg.error(this,  getExceptString(e));
                 }
-
+                DebuggerTraceManagerService dts = tool.getService(DebuggerTraceManagerService.class);
+                dts.getCurrent();
             }
             
 
@@ -442,22 +455,59 @@ public class RESimUtilsPlugin extends Plugin {
             }
              
         }
+        String writeGDBMappingMacro() {
+            String retval = null;
+            String tmpdir = System.getProperty("java.io.tmpdir");
+            System.out.println("Temp file path: " + tmpdir);
+            List<String> content = Arrays.asList("define info proc mappings",
+                    "echo 0x0 0x0 0xbfffffff 0x0 lomem \\n",
+                    "echo 0xc0000000 0xfffffff 0x800000 0x0 himem",
+                    "end");
+                   
+            try {
+
+                // Create an temporary file
+                Path temp = Files.createTempFile("32bit", ".mapping");
+                System.out.println("Temp file : " + temp);
+                
+                Files.write(temp,  content, StandardOpenOption.CREATE);
+                retval = temp.toString();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return retval;
+        }
         public CompletableFuture<? extends GdbModelImpl> build() {
             /**
              * Create a GdbModelImpl and provide it with a gdb command line.
              *
              */
             // TBD Generalize, remove hardcoded paths.
+            String gdbpath = Preferences.getProperty(RESIM_GDB_PATH);
+            if(gdbpath == null) {
+                Msg.error(this,  "Missing gdb path configuration value");
+                return null;
+            }
+            File target_file = new File(gdbpath);
+            if(!target_file.exists()) {
+                Msg.error(this,  "No program found at "+gdbpath);
+                return null;
+            }
+
             Program p = getProgram();
             String path = p.getExecutablePath();
             Msg.debug(this,  "from getProgram, got "+path);
             String target = Preferences.getProperty(RESIM_TARGET_ARCH);
             Msg.debug(this,  "build, target is "+target);
-            String gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32 "+ path;
+            String mapinfo = writeGDBMappingMacro();
+            String gdbCmd = gdbpath +  "-x "+mapinfo+" "+ path;
 
             if(target != null &! target.equals("auto")){
-                //gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -ex \"set sysroot /home/mike/highpdc\" -ex \"set architecture "+target+"\" -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32 "+path;
-                gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb -ex \"set architecture "+target+"\" -x /home/mike/git/ghidra/Ghidra/Debug/Debugger-agent-gdb/data/scripts/define_info32";
+             
+                gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+" -x "+mapinfo+" "+path;
+                //gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+path;
+
                 Msg.debug(this,  "found target, cmd is "+gdbCmd);
             }else {
                 Msg.debug(this,  "gdbCmd: "+gdbCmd);
@@ -542,6 +592,11 @@ public class RESimUtilsPlugin extends Plugin {
             String host_port = Preferences.getProperty(RESIM_HOST_PORT);
             host_port = JOptionPane.showInputDialog(null, "Enter host:port", host_port);
             Preferences.setProperty(RESIM_HOST_PORT, host_port);
+        }
+        public void setGdbPath() {
+            String gdbpath = Preferences.getProperty(RESIM_GDB_PATH);
+            gdbpath = JOptionPane.showInputDialog(null, "Path to gdb:", gdbpath);
+            Preferences.setProperty(RESIM_GDB_PATH, gdbpath);
         }
         public void setTargetArch() {
             String target = Preferences.getProperty(RESIM_TARGET_ARCH);
@@ -668,6 +723,11 @@ public class RESimUtilsPlugin extends Plugin {
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define host:port")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "host:port")
                 .onAction(c -> setHostPort())
+                .buildAndInstall(tool);
+            new ActionBuilder("Define host:port", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define gdb path")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "gdb path")
+                .onAction(c -> setGdbPath())
                 .buildAndInstall(tool);
             new ActionBuilder("Set target arch", getName())
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Set target arch")
