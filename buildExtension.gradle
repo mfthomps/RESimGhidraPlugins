@@ -28,7 +28,17 @@ apply plugin: 'java-library'
  *  		release name, and distro prefix (ghidira_<version>)
  *
  *****************************************************************************************/
-def ghidraInstallDir = file(buildscript.sourceFile.getAbsolutePath() + "/../../..").getCanonicalFile().getAbsolutePath()
+//def ghidraInstallDir = file(buildscript.sourceFile.getAbsolutePath() + "/../../..").getCanonicalFile().getAbsolutePath()
+def ghidraInstallDir
+
+if (System.env.GHIDRA_INSTALL_DIR) {
+	ghidraInstallDir = System.env.GHIDRA_INSTALL_DIR
+    print("is "+ghidraInstallDir)
+}
+else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
+	ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
+}
+//def ghidraDir = file(ghidraInstallDir).getCanonicalFile().getAbsolutePath()+"/Ghidra"
 def ghidraDir = file(ghidraInstallDir).getCanonicalFile().getAbsolutePath()
 def ghidraProps = new Properties()
 file(ghidraDir + "/application.properties").withReader { reader ->
