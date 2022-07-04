@@ -4,6 +4,7 @@ import agent.gdb.manager.impl.GdbManagerImpl;
 import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.model.impl.GdbModelImpl;
 import agent.gdb.pty.PtyFactory;
+import agent.gdb.pty.linux.LinuxPtyFactory;
 import docking.DockingUtils;
 import docking.action.KeyBindingData;
 import docking.action.builder.ActionBuilder;
@@ -16,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import javax.swing.KeyStroke;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
 import org.apache.commons.io.FilenameUtils;
@@ -171,7 +173,7 @@ public class RESimUtilsPlugin extends Plugin {
             
             return retval;
         }
-
+/*
         private DebuggerObjectsProvider getDebuggerObjectsProvider() throws Exception {
             DebuggerObjectsProvider dop = (DebuggerObjectsProvider) tool.getComponentProvider("Objects");
             if(dop == null) {
@@ -183,7 +185,7 @@ public class RESimUtilsPlugin extends Plugin {
                 return dop;
             }
         }
-
+*/
         /**
          * Refresh the gdb client state values.
          * 
@@ -487,11 +489,15 @@ public class RESimUtilsPlugin extends Plugin {
             String gdbpath = Preferences.getProperty(RESIM_GDB_PATH);
             if(gdbpath == null) {
                 Msg.error(this,  "Missing gdb path configuration value");
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing gdb path, use RESim / Configure menu.",
+                        "Missing gdb path", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
             File target_file = new File(gdbpath);
             if(!target_file.exists()) {
                 Msg.error(this,  "No program found at "+gdbpath);
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing gdb executalbe. No file found at:"+gdbpath,
+                        "Missing gdb executable", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
 
@@ -502,21 +508,21 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.debug(this,  "build, target is "+target);
             String mapinfo = writeGDBMappingMacro();
             String gdbCmd = gdbpath +  "-x "+mapinfo+" "+ path;
-
-            if(target != null &! target.equals("auto")){
-             
-                gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+" -x "+mapinfo+" "+path;
-                //gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+path;
-
-                Msg.debug(this,  "found target, cmd is "+gdbCmd);
-            }else {
-                Msg.debug(this,  "gdbCmd: "+gdbCmd);
+            if(target != null){
+                if(! target.equals("auto")){
+                    gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+" -x "+mapinfo+" "+path;
+                    Msg.debug(this,  "found target, cmd is "+gdbCmd);
+                }else {
+                    Msg.debug(this,  "target is auto gdbCmd: "+gdbCmd);
+                }
+            }else{
+                Msg.debug(this,  "no target arch, gdbCmd: "+gdbCmd);
             }
-            //String gdbCmd = "/home/mike/git/binutils-gdb/gdb/gdb";
+                 
             boolean existing = false;
 
             List<String> gdbCmdLine = ShellUtils.parseArgs(gdbCmd);
-            model = new GdbModelImpl(PtyFactory.local());
+            model = new GdbModelImpl(new LinuxPtyFactory());
             return model
                     .startGDB(existing ? null : gdbCmdLine.get(0),
                         gdbCmdLine.subList(1, gdbCmdLine.size()).toArray(String[]::new))
@@ -595,8 +601,12 @@ public class RESimUtilsPlugin extends Plugin {
         }
         public void setGdbPath() {
             String gdbpath = Preferences.getProperty(RESIM_GDB_PATH);
-            gdbpath = JOptionPane.showInputDialog(null, "Path to gdb:", gdbpath);
-            Preferences.setProperty(RESIM_GDB_PATH, gdbpath);
+            JFileChooser fc = new JFileChooser(gdbpath);
+            int got = fc.showOpenDialog(tool.getActiveWindow());
+            if(got == JFileChooser.APPROVE_OPTION) {
+                File selected = fc.getSelectedFile();
+                Preferences.setProperty(RESIM_GDB_PATH, selected.toString());
+            }
         }
         public void setTargetArch() {
             String target = Preferences.getProperty(RESIM_TARGET_ARCH);
@@ -743,6 +753,11 @@ public class RESimUtilsPlugin extends Plugin {
             .menuPath(MENU_RESIM, "Foo bar")
             .menuGroup(MENU_RESIM, "Foo")
             .onAction(c -> fooBar())
+            .buildAndInstall(tool);
+            new ActionBuilder("About", getName())
+            .menuPath(MENU_RESIM, "about")
+            .menuGroup(MENU_RESIM, "about")
+            .onAction(c -> about())
             .buildAndInstall(tool);
 
         }
@@ -1047,6 +1062,10 @@ public class RESimUtilsPlugin extends Plugin {
             //doThreads();
 
 
+        }
+        protected void about() {
+            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.1",
+                    "RESim version", JOptionPane.INFORMATION_MESSAGE);
         }
         
 }
