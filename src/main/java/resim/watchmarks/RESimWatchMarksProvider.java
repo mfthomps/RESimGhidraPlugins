@@ -16,13 +16,18 @@
 package resim.watchmarks;
 
 import java.awt.BorderLayout;
-
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.*;
-import java.util.function.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-import javax.swing.*;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
@@ -36,38 +41,25 @@ import docking.widgets.table.DefaultEnumeratedColumnTableModel.EnumeratedTableCo
 import ghidra.app.plugin.core.debug.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
-import ghidra.app.plugin.core.debug.gui.DebuggerResources.AbstractStepSnapForwardAction;
-import ghidra.app.services.*;
-
+import ghidra.app.services.DebuggerListingService;
+import ghidra.app.services.DebuggerModelService;
+import ghidra.app.services.DebuggerStaticMappingService;
+import ghidra.app.services.DebuggerTraceManagerService;
+import ghidra.app.services.MarkerService;
 import ghidra.framework.plugintool.AutoService;
-import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Program;
-import ghidra.trace.model.*;
-
-import ghidra.trace.model.stack.TraceStack;
-import ghidra.trace.model.stack.TraceStackFrame;
 import ghidra.trace.model.thread.TraceThread;
-import ghidra.trace.util.TraceAddressSpace;
-import ghidra.trace.util.TraceRegisterUtils;
 import ghidra.util.Msg;
-import ghidra.util.Swing;
 import ghidra.util.table.GhidraTable;
 import ghidra.util.table.GhidraTableFilterPanel;
-import utilities.util.SuppressableCallback;
-import utilities.util.SuppressableCallback.Suppression;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import ghidra.framework.plugintool.PluginTool;
-
-import resim.utils.RESimUtilsPlugin;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
 import resim.utils.RESimResources;
-import resim.utils.RESimResources.*;
+import resim.utils.RESimResources.AbstractRefreshAction;
+import resim.utils.RESimUtilsPlugin;
 public class RESimWatchMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
     protected enum WatchMarksTableColumns
