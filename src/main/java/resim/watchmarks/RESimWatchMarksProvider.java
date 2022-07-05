@@ -356,7 +356,15 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         watchMarksTableModel.add(row);
     }
     public void add(HashMap<Object, Object> entry, int index){
-        String msg = (String) entry.get("msg");
+        String msg = ((String) entry.get("msg")).trim();
+        if(msg.startsWith("\\t")){
+            msg = msg.substring(2);
+        }
+        int i = msg.indexOf("\\n");
+        if(i > 0){
+            msg = msg.substring(0, i);
+        }
+        Msg.debug(this, "add msg is "+msg);
         long ip = (long) entry.get("ip");
         Address ip_addr = resimUtils.addr(ip);
         long cycle = (long) entry.get("cycle");
