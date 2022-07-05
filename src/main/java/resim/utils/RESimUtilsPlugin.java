@@ -102,6 +102,7 @@ public class RESimUtilsPlugin extends Plugin {
         public final static String RESIM_HOST_PORT = "RESIM_HOST_PORT";
         public final static String RESIM_TARGET_ARCH = "RESIM_TARGET_ARCH";
         public final static String RESIM_GDB_PATH = "RESIM_GDB_PATH";
+        public final static String RESIM_FSROOT_PATH = "RESIM_FSROOT_PATH";
         private ArrayList<RESimProvider> refreshProviders;
         private ArrayList<RESimProvider> initProviders;
         public final static String MENU_RESIM = "&RESim";
@@ -500,6 +501,20 @@ public class RESimUtilsPlugin extends Plugin {
                         "Missing gdb executable", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
+            String fsrootpath = Preferences.getProperty(RESIM_GDB_PATH);
+            if(fsrootpath == null) {
+                Msg.error(this,  "Missing file system root path configuration value");
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing fs root path, use RESim / Configure menu.",
+                        "Missing fs root path", JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
+            target_file = new File(fsrootpath);
+            if(!target_file.exists()) {
+                Msg.error(this,  "No program found at "+fsrootpath);
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing fs root. No directory found at:"+fsrootpath,
+                        "Missing fs root directory.", JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
 
             Program p = getProgram();
             String path = p.getExecutablePath();
@@ -507,21 +522,18 @@ public class RESimUtilsPlugin extends Plugin {
             String target = Preferences.getProperty(RESIM_TARGET_ARCH);
             Msg.debug(this,  "build, target is "+target);
             String mapinfo = writeGDBMappingMacro();
-            String gdbCmd = gdbpath + " -x "+mapinfo+" "+ path;
+
+            String arch_info = "";
             if(target != null){
                 if(! target.equals("auto")){
-                    gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+" -x "+mapinfo+" "+path;
-                    Msg.debug(this,  "found target, cmd is "+gdbCmd);
-                }else {
-                    Msg.debug(this,  "target is auto gdbCmd: "+gdbCmd);
+                    arch_info = " -ex \"set architecture "+target+ "\" ";
                 }
-            }else{
-                Msg.debug(this,  "no target arch, gdbCmd: "+gdbCmd);
             }
+            String gdb_cmd = gdbpath+" -x "+mapinfo+arch_info+" -ex \"set sysroot "+fsrootpath+"\" -x "+mapinfo+" "+path;
+            Msg.debug(this,  "gdb cmd is "+gdb_cmd);
                  
             boolean existing = false;
-
-            List<String> gdbCmdLine = ShellUtils.parseArgs(gdbCmd);
+            List<String> gdbCmdLine = ShellUtils.parseArgs(gdb_cmd);
             model = new GdbModelImpl(new LinuxPtyFactory());
             return model
                     .startGDB(existing ? null : gdbCmdLine.get(0),
@@ -606,6 +618,16 @@ public class RESimUtilsPlugin extends Plugin {
             if(got == JFileChooser.APPROVE_OPTION) {
                 File selected = fc.getSelectedFile();
                 Preferences.setProperty(RESIM_GDB_PATH, selected.toString());
+            }
+        }
+        public void setFSRootPath() {
+            String fsroot = Preferences.getProperty(RESIM_FSROOT_PATH);
+            JFileChooser fc = new JFileChooser(fsroot);
+            fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int got = fc.showOpenDialog(tool.getActiveWindow());
+            if(got == JFileChooser.APPROVE_OPTION) {
+                File selected = fc.getSelectedFile();
+                Preferences.setProperty(RESIM_FSROOT_PATH, selected.toString());
             }
         }
         public void setTargetArch() {
@@ -734,10 +756,15 @@ public class RESimUtilsPlugin extends Plugin {
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "host:port")
                 .onAction(c -> setHostPort())
                 .buildAndInstall(tool);
-            new ActionBuilder("Define host:port", getName())
+            new ActionBuilder("Define gdb path", getName())
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define gdb path")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "gdb path")
                 .onAction(c -> setGdbPath())
+                .buildAndInstall(tool);
+            new ActionBuilder("Define FS root", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define file system root")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "FS Root")
+                .onAction(c -> setFSRootPath())
                 .buildAndInstall(tool);
             new ActionBuilder("Set target arch", getName())
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Set target arch")
