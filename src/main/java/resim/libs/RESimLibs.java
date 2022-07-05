@@ -67,6 +67,7 @@ public class RESimLibs {
         Object[] operands = instruction.getOpObjects(opIndex);
         if (operands.length == 1) {
             //return operands[0];
+            Msg.debug(src,  "op len is 1");
             return null;
         }
         
@@ -74,36 +75,69 @@ public class RESimLibs {
         List<Object> list =
             prototype.getOpRepresentationList(opIndex, instruction.getInstructionContext());
         if (list == null) {
+            Msg.debug(src,  "list null");
             return null;
         }
-        DebuggerRegistersProvider registerProvider = null;
-        if(isbrackets(list)) {
-            Msg.debug(src,  "is brackets");
-            if(list.get(1) instanceof Register) {
-                Register r = (Register) list.get(1);
-                registerProvider = (DebuggerRegistersProvider) tool.getComponentProvider(DebuggerResources.TITLE_PROVIDER_REGISTERS);
+        DebuggerRegistersProvider registerProvider = (DebuggerRegistersProvider) tool.getComponentProvider(DebuggerResources.TITLE_PROVIDER_REGISTERS);
 
-                if(registerProvider == null) {
-                    Msg.error(src,  "no register provider");
-                    return null;
+        if(registerProvider == null) {
+            Msg.error(src,  "no register provider");
+            return null;
+        }
+        int sign = 1;
+        long sum = 0;
+        boolean in_brackets = false;
+        boolean found_brackets = false;
+        boolean domul = false;
+        long preval = 0;
+        for(Object o : list){
+            //Msg.debug(src,  "type: "+o.getClass()+" "+o.toString());        
+          
+            //Msg.debug(src, "preval "+preval+" sum "+sum);
+            if(!in_brackets){
+                if(o instanceof Character){
+                    if((Character) o == '['){
+                        in_brackets = true;
+                    }
                 }
-                
-                RegisterRow row = registerProvider.getRegisterRow(r);
-                
-                BigInteger regval = row.getValue();
-                if(list.get(4) instanceof Scalar) {
-                    Scalar s = (Scalar) list.get(4);
-                    Long sval = s.getSignedValue();
-                    Long offset = regval.longValue() + sval;
-                    Msg.debug(src, "scalar value "+sval+" regval "+regval+" offset"+ offset);
-                    retval = addr(tool, offset);
-
-                }else {
-                    Msg.debug(src,  "list(4) not scalar, is "+list.get(4).getClass());
+            }else{
+                if(o instanceof Character){
+                    if((Character) o == '+'){
+                        sum = sum + preval*sign;
+                        sign = 1;
+                    }else if ((Character) o == '-'){
+                        sum = sum + preval*sign;
+                        sign = -1;
+                    }else if ((Character) o == '*'){
+                        domul = true;
+                        //Msg.debug(src, "setting multiply preval was "+preval);
+                    }else if ((Character) o == ']'){
+                        //Msg.debug(src, "got end bracket preval was "+preval);
+                        sum = sum + preval*sign;
+                        found_brackets = true;
+                        break;
+                    }
+                }else if(o instanceof Register){
+                    Register r = (Register) o;
+                    RegisterRow row = registerProvider.getRegisterRow(r);
+                    BigInteger regval = row.getValue();
+                    preval = regval.longValue();
+                }else if(o instanceof Scalar){
+                    Scalar s = (Scalar) o;
+                    if(domul){
+                        preval = preval * s.getSignedValue();
+                        domul = false;
+                        //Msg.debug(src, "did mul, preval now "+preval);
+                    }else{
+                        preval = s.getSignedValue();
+                    }
                 }
             }
-            
         }
+        if(found_brackets){
+            retval = addr(tool, sum);
+        }
+         
         return retval;
 
     }
