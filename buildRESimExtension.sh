@@ -8,6 +8,9 @@ if [ -z $GHIDRA_INSTALL_DIR ]; then
     exit
 fi
 gradle build
-cp -aR build/classes/java/main $GHIDRA_INSTALL_DIR/Extensions/RESimGhidraPlugins/bin
-cp extension.properties $GHIDRA_INSTALL_DIR/Extensions/RESimGhidraPlugins/
-cp -aR data $GHIDRA_INSTALL_DIR/Extensions/RESimGhidraPlugins/
+GHIDRA_EXTENSION_DIR=$GHIDRA_INSTALL_DIR/../Extensions
+mkdir -p $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/lib
+cp -aR build/libs/RESimGhidraPlugins.jar $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/lib
+cp -a lib/*.jar $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/lib
+cp extension.properties $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/
+cp -aR data $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/

@@ -507,7 +507,7 @@ public class RESimUtilsPlugin extends Plugin {
             String target = Preferences.getProperty(RESIM_TARGET_ARCH);
             Msg.debug(this,  "build, target is "+target);
             String mapinfo = writeGDBMappingMacro();
-            String gdbCmd = gdbpath +  "-x "+mapinfo+" "+ path;
+            String gdbCmd = gdbpath + " -x "+mapinfo+" "+ path;
             if(target != null){
                 if(! target.equals("auto")){
                     gdbCmd = gdbpath +" -ex \"set architecture "+target+ "\"" +" -ex \"set sysroot /home/mike/highpdc\" "+" -x "+mapinfo+" "+path;
