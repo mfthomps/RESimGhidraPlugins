@@ -52,6 +52,7 @@ import resim.utils.RESimUtilsPlugin;
 import resim.utils.RESimCursorAction;
 import resim.utils.Json;
 import resim.utils.RESimProvider;
+import resim.utils.RESimRegAction;
 import resim.utils.RESimResources.*;
 import resim.utils.RESimResources;
 public class RESimBookMarksProvider extends ComponentProviderAdapter implements RESimProvider{
@@ -331,8 +332,11 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         actionRefresh = new RefreshAction();
         actionAdd = new AddAction();
 
-        RESimCursorAction revTrackAddrAction = new RESimCursorAction("Rev track address", "revTaintAddr", resimUtils, this);
+        /* Do this here so the bookmarks get refreshed */
+        RESimCursorAction revTrackAddrAction = new RESimCursorAction("Rev track address", "revTaintAddr", resimUtils, this, false);
         tool.addAction(revTrackAddrAction);
+        RESimRegAction revTrackRegAction = new RESimRegAction("Rev track register", "revTaintReg", resimUtils, this, true);
+        tool.addAction(revTrackRegAction);
     }
 
     @Override
@@ -427,7 +431,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             Msg.debug(this, "bookmark json:"+book_string);
             Object watch_json = Json.getJson(book_string);
             java.util.List<Object> bookMarks = (java.util.ArrayList<Object>) watch_json;
-            int index = 0;
+            int index = 1;
             for(Object o : bookMarks){
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
                 add(entry, index);

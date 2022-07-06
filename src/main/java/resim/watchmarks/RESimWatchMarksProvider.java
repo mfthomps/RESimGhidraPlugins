@@ -397,7 +397,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
        
             Object watch_json = Json.getJson(watch_string);
             java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
-            int index = 0;
+            int index = 1;
             for(Object o : watchMarks){
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
                 add(entry, index);
