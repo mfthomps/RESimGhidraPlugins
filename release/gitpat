@@ -1,0 +1,2 @@
+unzip /media/sf_SEED/gitpat.zip -d /tmp
+export gitpat=$(cat /tmp/pat)
