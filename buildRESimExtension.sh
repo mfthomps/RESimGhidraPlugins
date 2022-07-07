@@ -26,6 +26,6 @@ cp -aR data $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/
 #
 mkdir -p $GHIDRA_DEV_DIR/Ghidra/Extensions/RESimGhidraPlugins/
 cp -aR ./build/classes/java/main/resim $GHIDRA_DEV_DIR/Ghidra/Extensions/RESimGhidraPlugins/bin/main
+cp -aR ./bin $GHIDRA_DEV_DIR/Ghidra/Extensions/RESimGhidraPlugins/
 cp extension.properties $GHIDRA_DEV_DIR/Ghidra/Extensions/RESimGhidraPlugins/
 cp -aR data $GHIDRA_DEV_DIR/Ghidra/Extensions/RESimGhidraPlugins/
-cp -a lib/*.jar $GHIDRA_DEV_DIR/Ghidra/Extensions/RESimGhidraPlugins/lib
