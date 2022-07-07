@@ -29,7 +29,7 @@ import ghidra.util.Msg;
         description = "GUI to list and create RESim bookmarks and skip to selected execution points", //
         category = PluginCategoryNames.DEBUGGER, //
         packageName = DebuggerPluginPackage.NAME, //
-        status = PluginStatus.STABLE, //
+        status = PluginStatus.RELEASED, //
         eventsConsumed = {
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //

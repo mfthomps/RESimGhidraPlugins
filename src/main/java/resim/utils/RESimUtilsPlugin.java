@@ -75,7 +75,7 @@ import com.google.common.collect.Range;
         description = "Manage connecting Ghidra to the Simics GDB server, manage the other RESim plugins and provide common functions.", //
         category = PluginCategoryNames.DEBUGGER, //
         packageName = DebuggerPluginPackage.NAME, //
-        status = PluginStatus.STABLE, //
+        status = PluginStatus.RELEASED, //
         eventsConsumed = {
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //
