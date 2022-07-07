@@ -36,8 +36,6 @@ import ghidra.app.plugin.core.debug.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
-import ghidra.app.script.GhidraScript;
-
 import ghidra.framework.plugintool.AutoService;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
@@ -241,12 +239,13 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 
         setTitle("BOOK MARKS");
+
         setIcon(RESimResources.ICON_RETOP);
+
         setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
         setWindowMenuGroup(DebuggerPluginPackage.NAME);
         Msg.debug(this,  "did set window");
         buildMainPanel();
-
         setDefaultWindowPosition(WindowPosition.BOTTOM);
 
         setVisible(true);
@@ -333,9 +332,9 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         actionAdd = new AddAction();
 
         /* Do this here so the bookmarks get refreshed */
-        RESimCursorAction revTrackAddrAction = new RESimCursorAction("Rev track address", "revTaintAddr", resimUtils, this, false);
+        RESimCursorAction revTrackAddrAction = new RESimCursorAction("Rev track address", "revTaintAddr", resimUtils, this);
         tool.addAction(revTrackAddrAction);
-        RESimRegAction revTrackRegAction = new RESimRegAction("Rev track register", "revTaintReg", resimUtils, this, true);
+        RESimRegAction revTrackRegAction = new RESimRegAction("Rev track register", "revTaintReg", resimUtils, this);
         tool.addAction(revTrackRegAction);
     }
 
