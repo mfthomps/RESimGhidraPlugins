@@ -45,17 +45,7 @@ public class RESimLibs {
         }
         return retval;
     }
-    public static boolean isbrackets(List<Object>list) {
-        boolean retval = false;
-        if(list.get(0) instanceof Character && list.get(list.size() -1) instanceof Character) {
-            if((Character)list.get(0) == '[' && (Character)list.get(list.size()-1) == ']') {
-                retval = true;
-            }
-        }else {
-            Msg.debug(null,  "not brackets");
-        }
-        return retval;
-    }
+
     public static Address addr(PluginTool tool, long offset) {
         Trace currentTrace = getCurrentTrace(null, tool);
         AddressSpace dynRam = currentTrace.getBaseAddressFactory().getDefaultAddressSpace();
