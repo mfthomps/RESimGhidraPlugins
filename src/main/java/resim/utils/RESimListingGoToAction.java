@@ -56,7 +56,6 @@ public class RESimListingGoToAction extends ListingContextAction {
     public RESimListingGoToAction(String name, RESimUtilsPlugin plugin) {
         super(name, plugin.getName());
         this.plugin = plugin;
-        this.cmd = cmd;
         setPopupMenuData(
                 new MenuData(new String[] { "Resim", name }, null, RESimUtilsPlugin.RESIM_MENU_SUBGROUP,
                     MenuData.NO_MNEMONIC, RESimUtilsPlugin.RESIM_SUBGROUP_BEGINNING));
