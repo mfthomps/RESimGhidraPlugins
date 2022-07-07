@@ -3,7 +3,6 @@ package resim.utils;
 import agent.gdb.manager.impl.GdbManagerImpl;
 import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.model.impl.GdbModelImpl;
-import agent.gdb.pty.PtyFactory;
 import agent.gdb.pty.linux.LinuxPtyFactory;
 import docking.DockingUtils;
 import docking.action.KeyBindingData;
@@ -17,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import javax.swing.KeyStroke;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
@@ -103,6 +103,7 @@ public class RESimUtilsPlugin extends Plugin {
         public final static String RESIM_TARGET_ARCH = "RESIM_TARGET_ARCH";
         public final static String RESIM_GDB_PATH = "RESIM_GDB_PATH";
         public final static String RESIM_FSROOT_PATH = "RESIM_FSROOT_PATH";
+
         private ArrayList<RESimProvider> refreshProviders;
         private ArrayList<RESimProvider> initProviders;
         public final static String MENU_RESIM = "&RESim";
@@ -247,6 +248,7 @@ public class RESimUtilsPlugin extends Plugin {
         public void addMessage(String msg) {
             provider.addMessage("RESim:", msg);
         }
+
         public CompletableFuture<String> doRESimRefresh(String cmd){
             /**
              * Use the gdb monitor to send a command to RESim and refresh the client when done.
@@ -254,15 +256,32 @@ public class RESimUtilsPlugin extends Plugin {
              * @return The response from RESim
              */
             Msg.debug(this,"doRESimRefresh do cmd: "+cmd);
-            CompletableFuture<String> retval = doRESim(cmd).thenApply(result ->{
-                if(result != null){
-                    Msg.debug(this, "doRESimRefresh did command, refresh client.");
-                    addMessage(result);
-                    refreshClient(true);
+            CompletableFuture <String> cmdfuture = doRESim(cmd);
+            String result;
+            try {
+                result = cmdfuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                // TODO Auto-generated catch block
+                Msg.error(this,  getExceptString(e));
+                return null;
+            }
+            Msg.debug(this,  "back from cmd get");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            return doRESim("getEIPWhenStopped()").thenApply(waitresult -> {
+                Msg.debug(this,  "back from geteip with "+waitresult);
+                if(waitresult != null){
+
+                        Msg.debug(this, "doRESimRefresh did command, refresh client.");
+                        addMessage(waitresult);
+                        refreshClient(true);
                 }
-                return result;
+                return waitresult;
             });
-            return retval;
         }
         public CompletableFuture<String> doRESim(String cmd) {
             /**
@@ -845,7 +864,7 @@ public class RESimUtilsPlugin extends Plugin {
 
 
         }
-        private Program getProgram() {
+        public Program getProgram() {
             ProgramManager pm = null;
             int failcount = 0;
             while(pm == null){
