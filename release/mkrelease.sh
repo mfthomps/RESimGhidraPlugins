@@ -21,6 +21,10 @@ if [[ -z "$SSH_AGENT_PID" ]]; then
     echo "No ssh-agent running.  Source ~/agent.sh"
     exit
 fi
+if [[ ! -d release ]]; then
+    echo "Run it from the parent directory, e.g., ./release/mkrelease.sh"
+    exit 
+fi
 git pull || exit
 git push --set-upstream origin master || exit
 
@@ -38,7 +42,7 @@ cd $release_dir
 cd ..
 tar czf $here/release/artifacts/RESimGhidraPlugins.tar RESimGhidraPlugins
 echo "Now generate release"
-
+cd $here
 git tag $new_tag
 git push --set-upstream origin master
 git push --tags
