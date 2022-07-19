@@ -626,8 +626,11 @@ public class RESimUtilsPlugin extends Plugin {
             }         
         }
         public void setHostPort() {
-            String host_port = Preferences.getProperty(RESIM_HOST_PORT);
-            host_port = JOptionPane.showInputDialog(null, "Enter host:port", host_port);
+            String orig_host_port = Preferences.getProperty(RESIM_HOST_PORT);
+            String host_port = JOptionPane.showInputDialog(null, "Enter host:port", orig_host_port);
+            if(host_port == null){
+                host_port = orig_host_port;
+            } 
             Preferences.setProperty(RESIM_HOST_PORT, host_port);
         }
         public void setGdbPath() {
@@ -805,6 +808,12 @@ public class RESimUtilsPlugin extends Plugin {
             .menuGroup(MENU_RESIM, "about")
             .onAction(c -> about())
             .buildAndInstall(tool);
+            new ActionBuilder("Resync with server", getName())
+             .menuPath(RESimUtilsPlugin.MENU_RESIM, "Refresh", "&Resync with server")
+             .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Refresh")
+             .onAction(c -> refreshClient(true))
+             .buildAndInstall(tool);
+
 
         }
         public static RESimUtilsPlugin getRESimUtils(PluginTool tool) {
@@ -1110,7 +1119,7 @@ public class RESimUtilsPlugin extends Plugin {
 
         }
         protected void about() {
-            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.1",
+            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.1b",
                     "RESim version", JOptionPane.INFORMATION_MESSAGE);
         }
         
