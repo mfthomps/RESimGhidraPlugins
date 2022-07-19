@@ -3,6 +3,9 @@ These are a set of plugins for the Ghidra Debugger to allow Ghidra to be used as
 disassembler/debugger with the RESim reverse engineering platform.
 See https://github.com/mfthomps/RESim
 
+**NOTE:** This is preliminary work.  While many of the RESim IDA Pro plugin features 
+are replicated here, it is not complete and not fully tested.
+
 ## Install Ghidra from its repo
 These plugins currently require Ghidra version 10.2, which can be rebuilt
 from the Ghidra repo (https://github.com/NationalSecurityAgency/ghidra) per their rebuilding instructions.  
@@ -31,7 +34,7 @@ run the ./buildRESimExtension.sh script to build and install the extension.
 After starting Ghidra from GHIDRA\_INSTALL\_DIR, use the menu: File / Install Extensions
 and click the Add icon (upper right).  Then navigate to and select:
 
-    GHIDRA\_INSTALL\_DIR/Extensions/RESimGhidraPlugins
+    GHIDRA_INSTALL_DIR/Extensions/RESimGhidraPlugins
 
 Your must then restart Ghidra.
 
@@ -41,6 +44,10 @@ per taste.
 Use the RESim / Configure menu options to set the path to your customized gdb; the path to 
 the file system root of the target binary, the host:port of your Simics host, and to set the ARM architecture if needed.
 See the RESim-UsersGuide.pdf for additional information on using the Ghidra plugin with RESim.
+
+## Ghidra Debugger hover plugins
+The hover plugins included herein are largely separable from other plugs.  They display register and address values
+when the mouse hovers over operands.
 
 ## Development
 If you are developing the plugin with Eclipse, you can test the plugin within the Ghidra repo environment
