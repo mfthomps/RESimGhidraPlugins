@@ -18,7 +18,6 @@ package resim.hover;
 import ghidra.app.CorePluginPackage;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
-import ghidra.app.plugin.core.codebrowser.hover.ScalarOperandListingHover;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 

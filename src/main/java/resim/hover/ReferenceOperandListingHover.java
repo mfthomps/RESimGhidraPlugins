@@ -15,8 +15,6 @@
  */
 package resim.hover;
 
-import java.math.BigInteger;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -29,30 +27,18 @@ import docking.widgets.fieldpanel.field.Field;
 import docking.widgets.fieldpanel.support.FieldLocation;
 import ghidra.GhidraOptions;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
-import ghidra.app.plugin.core.debug.DebuggerCoordinates;
-import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
-import ghidra.app.plugin.core.debug.gui.register.DebuggerRegistersProvider;
-import ghidra.app.plugin.core.debug.gui.register.RegisterRow;
 import ghidra.app.plugin.core.hover.AbstractConfigurableHover;
-import ghidra.app.plugin.core.hover.AbstractScalarOperandHover;
 import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.address.AddressSpace;
-import ghidra.program.model.lang.InstructionPrototype;
-import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.MemBuffer;
-import ghidra.program.model.mem.MemoryAccessException;
-import ghidra.program.model.scalar.Scalar;
 import ghidra.program.util.OperandFieldLocation;
 import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.Trace;
-import ghidra.trace.model.memory.TraceMemoryManager;
 import ghidra.util.HTMLUtilities;
 import ghidra.util.Msg;
 import resim.libs.RESimLibs;
@@ -64,7 +50,6 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 	private static final String NAME = "Referencee Operand Display";
 	private static final String DESCRIPTION =
 		"Display content of referenced memory.";
-	private DebuggerRegistersProvider registerProvider = null;
 	private Trace currentTrace;
 	private GdbManagerImpl impl;
 	public ReferenceOperandListingHover(PluginTool tool) {
