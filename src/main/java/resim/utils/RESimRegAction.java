@@ -100,7 +100,7 @@ public class RESimRegAction extends ListingContextAction {
         if(op != null) {
             Msg.debug(this,  "op is "+op.getClass()+" value  "+op.toString());
             if(op instanceof Register) {
-                full_cmd = "revTaintReg('"+op.toString()+"')";
+                full_cmd = this.cmd+"('"+op.toString()+"')";
             }
         }
 

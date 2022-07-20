@@ -257,7 +257,7 @@ public class RESimUtilsPlugin extends Plugin {
              */
             Msg.debug(this,"doRESimRefresh do cmd: "+cmd);
             CompletableFuture <String> cmdfuture = doRESim(cmd);
-            String result;
+            String result = null;
             try {
                 result = cmdfuture.get();
             } catch (InterruptedException | ExecutionException e) {
@@ -265,7 +265,7 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.error(this,  getExceptString(e));
                 return null;
             }
-            Msg.debug(this,  "back from cmd get");
+            Msg.debug(this,  "back from cmd get, got "+result);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -731,7 +731,9 @@ public class RESimUtilsPlugin extends Plugin {
         }
 
         private void createActions() {
-            // we want to put all function pull-right menus in the same group
+            /* Cursor and register actions for right-click menu popups.  Also see actions
+             * defined in bookmarks, e.g., revTaint functions that generate bookmarks.
+             */
             tool.setMenuGroup(new String[] { RESIM_MENU_PULLRIGHT }, RESIM_MENU_SUBGROUP,
                 RESIM_SUBGROUP_MIDDLE);
             RESimCursorAction revToCursorAction = new RESimCursorAction("Rev to cursor", "revToAddr", this, null);
@@ -744,10 +746,15 @@ public class RESimUtilsPlugin extends Plugin {
                 KeyStroke.getKeyStroke(KeyEvent.VK_F4, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
             tool.addAction(runToCursorAction);
             
+            RESimRegAction revModRegAction = new RESimRegAction("Rev mod register", "revToModReg", this, null);
+            tool.addAction(revModRegAction);
+            RESimCursorAction revModAddrAction = new RESimCursorAction("Rev mod address", "revToWrite", this, null);
+            tool.addAction(revModAddrAction);
+
             tool.setMenuGroup(new String[] { MENU_RESIM, "RESim" }, "first");
 
-            RESimListingGoToAction lc = new RESimListingGoToAction("Goto address", this);
-            tool.addAction(lc);
+            //RESimListingGoToAction lc = new RESimListingGoToAction("Goto address", this);
+            //tool.addAction(lc);
             /*
             new ActionBuilder("Manual map", getName())
                 .menuPath(MENU_RESIM, "Manual map")
@@ -755,6 +762,9 @@ public class RESimUtilsPlugin extends Plugin {
                 .onAction(c -> manualMap())
                 .buildAndInstall(tool);
                 */
+            /*
+             * Main menu RESim entries
+             */
             new ActionBuilder("Attach Simulation", getName())
                 .menuPath(MENU_RESIM, "Attach Simulation")
                 .menuGroup(MENU_RESIM, "Attach")
@@ -764,14 +774,19 @@ public class RESimUtilsPlugin extends Plugin {
             new ActionBuilder("Reverse step into", getName())
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-into")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse")
-                .onAction(c -> revStep(true))
+                .onAction(c -> doRESimRefresh("revStepInto()"))
                 .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F8, InputEvent.CTRL_DOWN_MASK))
                 .buildAndInstall(tool);
             new ActionBuilder("Reverse step over", getName())
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-over")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse")
-                .onAction(c -> revStep(false))
+                .onAction(c -> doRESimRefresh("revStepOver()"))
                 .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F10, InputEvent.CTRL_DOWN_MASK))
+                .buildAndInstall(tool);
+            new ActionBuilder("Reverse to text", getName())
+                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&to text")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse")
+                .onAction(c -> doRESimRefresh("revToText()"))
                 .buildAndInstall(tool);
             new ActionBuilder("Define host:port", getName())
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define host:port")
@@ -813,7 +828,21 @@ public class RESimUtilsPlugin extends Plugin {
              .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Refresh")
              .onAction(c -> refreshClient(true))
              .buildAndInstall(tool);
-
+            new ActionBuilder("Run to user space", getName())
+             .menuPath(RESimUtilsPlugin.MENU_RESIM, "Run to", "&user space")
+             .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Run to")
+             .onAction(c -> doRESimRefresh("runToUserSpace()"))
+             .buildAndInstall(tool);
+            new ActionBuilder("Run to text segment", getName())
+             .menuPath(RESimUtilsPlugin.MENU_RESIM, "Run to", "&text segment")
+             .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Run to")
+             .onAction(c -> doRESimRefresh("runToText()"))
+             .buildAndInstall(tool);
+            new ActionBuilder("Run to syscall", getName())
+             .menuPath(RESimUtilsPlugin.MENU_RESIM, "Run to", "&syscall")
+             .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Run to")
+             .onAction(c -> runToSyscall())
+             .buildAndInstall(tool);
 
         }
         public static RESimUtilsPlugin getRESimUtils(PluginTool tool) {
@@ -974,17 +1003,6 @@ public class RESimUtilsPlugin extends Plugin {
                return false;
             }
         }
-
-        protected void revStep(boolean step_into) {
-            String cmd = null;
-            Msg.debug(this,  "revStep");
-            if(step_into){
-                cmd = "reverseToCallInstruction(True)";
-            }else{
-                cmd = "reverseToCallInstruction(False)";
-            }
-            doRESimRefresh(cmd);
-        }
         protected void addThread(java.util.HashMap<Object, Object> entry) {
 
             Range <Long> r = Range.atLeast(0L);
@@ -1119,8 +1137,28 @@ public class RESimUtilsPlugin extends Plugin {
 
         }
         protected void about() {
-            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.1b",
+            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.1d",
                     "RESim version", JOptionPane.INFORMATION_MESSAGE);
         }
-        
+        private void runToSyscall(){
+            String syscall = JOptionPane.showInputDialog(null, "Syscall number (-1 for any)", "-1");
+            if(syscall == null){
+                Msg.debug(this, "runToSyscall canceled");
+            }else{
+                String cmd = null;
+                if(syscall.equals("-1")){
+                    cmd = "runToSyscall()";
+                }else{
+                    cmd = "runToSyscall("+syscall+")";
+                }
+                doRESimRefresh(cmd);
+            }
+        } 
+        void revStep(boolean into){
+            if(into){
+                doRESimRefresh("revStepInto()");
+            }else{
+                doRESimRefresh("revStepOver()");
+            }
+       } 
 }

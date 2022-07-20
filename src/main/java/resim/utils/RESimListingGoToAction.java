@@ -38,7 +38,7 @@ import ghidra.util.Msg;
 import resim.libs.RESimLibs;
 /**
 
- * Action in RESimUtils.
+ *  NOT USED -- artifact of early testing
  */
 public class RESimListingGoToAction extends ListingContextAction {
     /** the plugin associated with this action. */
