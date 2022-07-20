@@ -736,12 +736,12 @@ public class RESimUtilsPlugin extends Plugin {
              */
             tool.setMenuGroup(new String[] { RESIM_MENU_PULLRIGHT }, RESIM_MENU_SUBGROUP,
                 RESIM_SUBGROUP_MIDDLE);
-            RESimCursorAction revToCursorAction = new RESimCursorAction("Rev to cursor", "revToAddr", this, null);
+            RESimCursorAction revToCursorAction = new RESimCursorAction("Rev to cursor", "revToAddr", this, null, true);
             revToCursorAction.setKeyBindingData(new KeyBindingData(
                 KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.SHIFT_DOWN_MASK)));
             tool.addAction(revToCursorAction);
 
-            RESimCursorAction runToCursorAction = new RESimCursorAction("Run to cursor", "doBreak", this, null);
+            RESimCursorAction runToCursorAction = new RESimCursorAction("Run to cursor", "doBreak", this, null, true);
             runToCursorAction.setKeyBindingData(new KeyBindingData(
                 KeyStroke.getKeyStroke(KeyEvent.VK_F4, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
             tool.addAction(runToCursorAction);
@@ -753,8 +753,8 @@ public class RESimUtilsPlugin extends Plugin {
 
             tool.setMenuGroup(new String[] { MENU_RESIM, "RESim" }, "first");
 
-            //RESimListingGoToAction lc = new RESimListingGoToAction("Goto address", this);
-            //tool.addAction(lc);
+            RESimListingGoToAction lc = new RESimListingGoToAction("Goto address", this);
+            tool.addAction(lc);
             /*
             new ActionBuilder("Manual map", getName())
                 .menuPath(MENU_RESIM, "Manual map")

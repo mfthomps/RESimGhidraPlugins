@@ -37,8 +37,8 @@ import ghidra.util.HelpLocation;
 import ghidra.util.Msg;
 import resim.libs.RESimLibs;
 /**
-
- *  NOT USED -- artifact of early testing
+ *  Go to an address whose value is found at operand of the cursor location, e.g., [EAX]
+ *  Currently used with right click.  TBD figure out how to trigger with double-click.
  */
 public class RESimListingGoToAction extends ListingContextAction {
     /** the plugin associated with this action. */

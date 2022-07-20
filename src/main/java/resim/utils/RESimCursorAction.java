@@ -29,6 +29,9 @@ import ghidra.program.model.listing.*;
 import ghidra.program.model.symbol.*;
 import ghidra.util.HelpLocation;
 import ghidra.util.Msg;
+import ghidra.program.util.OperandFieldLocation;
+import ghidra.program.util.ProgramLocation;
+import resim.libs.RESimLibs;
 /**
 
  * Action in RESimUtils.
@@ -38,14 +41,33 @@ public class RESimCursorAction extends ListingContextAction {
     RESimUtilsPlugin plugin;
     String cmd;
     RESimProvider refresh;
-
+    // if line is true, cursor is only used to get address of current line
+    boolean line=false;
     /**
-     * Create a new action, to create a function at the current location with a selection
+     * Create a new action to perform a RESim command passing in an address taken from the cursor position.
      * 
      * @param string  name of the action
-     * @param resimUtils does checking for this action
+     * @param string  RESim command
+     * @param resimUtilsPlugin does checking for this action
+     * @param RESimProvider handles refresh
+     * @param boolean whether the cursor should be interpreted as the address of the line, vice decoded operand
 
      */
+    public RESimCursorAction(String name, String cmd, RESimUtilsPlugin plugin, RESimProvider refresh, boolean line) {
+        super(name, plugin.getName());
+        this.line = line; 
+        this.plugin = plugin;
+        this.cmd = cmd;
+        this.refresh = refresh;
+
+            // top-level item usable most places
+            setPopupMenuData(
+                new MenuData(new String[] { "Resim", name }, null, RESimUtilsPlugin.RESIM_MENU_SUBGROUP,
+                    MenuData.NO_MNEMONIC, RESimUtilsPlugin.RESIM_SUBGROUP_BEGINNING));
+
+
+        setEnabled(true);
+    }
     public RESimCursorAction(String name, String cmd, RESimUtilsPlugin plugin, RESimProvider refresh) {
         super(name, plugin.getName());
         this.plugin = plugin;
@@ -67,23 +89,36 @@ public class RESimCursorAction extends ListingContextAction {
      */
     @Override
     public void actionPerformed(ListingActionContext context) {
+        Msg.debug(this, "actionPeformed");
         Address entry = null;
         AddressSetView body = null;
-
-        if (context.hasSelection()) {
-            body = context.getSelection();
-            entry = body.getMinAddress();
-        }
-        else {
-            entry = context.getAddress();
-        }
-         
+        if(!line){
+            ProgramLocation loc = context.getLocation();
+            Address a = loc.getAddress();
+            if(a != null){
+                Instruction instruction = context.getProgram().getListing().getInstructionAt(a);
+                try{
+                    OperandFieldLocation operandLocation = (OperandFieldLocation) loc;
+                    entry = RESimLibs.getMemReference(this, plugin.getTool(), operandLocation, instruction);
+                }catch(java.lang.ClassCastException ex){
+                }
+            }
+        }else{
+            if (context.hasSelection()) {
+                body = context.getSelection();
+                entry = body.getMinAddress();
+            }
+            else {
+                entry = context.getAddress();
+            }
+        } 
         if (entry == null) {
+            Msg.debug(this, "Failed to get address in actionPerformed");
             return;
         }
         long addr = entry.getOffset();
         /* here come the hacks */
-        String full_cmd = this.cmd+"("+addr+")";
+        String full_cmd = this.cmd+"(0x"+Long.toHexString(addr)+")";
         if(this.cmd.equals("doBreak")){
             full_cmd = this.cmd+"("+addr+",run=True)";
         }
