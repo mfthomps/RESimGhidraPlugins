@@ -129,8 +129,8 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
     protected static class REStackTableModel
             extends DefaultEnumeratedColumnTableModel<REStackTableColumns, RESimStackRow> {
 
-        public REStackTableModel() {
-            super("REStack", REStackTableColumns.class);
+        public REStackTableModel(PluginTool tool) {
+            super(tool, "REStack", REStackTableColumns.class);
         }
 
         @Override
@@ -201,7 +201,7 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
     private final AutoService.Wiring autoServiceWiring;
 
 
-    protected final REStackTableModel reStackTableModel = new REStackTableModel();
+    protected final REStackTableModel reStackTableModel;
     protected GhidraTable reStackTable;
     protected GhidraTableFilterPanel<RESimStackRow> reStackFilterPanel;
 
@@ -216,6 +216,7 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         super(plugin.getTool(), "REStack", plugin.getName());
         this.plugin = plugin;
         PluginTool tool = plugin.getTool();
+        reStackTableModel = new REStackTableModel(tool);
 
         
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);

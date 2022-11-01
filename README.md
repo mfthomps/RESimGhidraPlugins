@@ -7,12 +7,15 @@ See https://github.com/mfthomps/RESim
 are replicated here, it is not complete and not fully tested.
 
 ## Install Ghidra from its repo
-These plugins currently require Ghidra version 10.2, which can be rebuilt
+These plugins currently require Ghidra version 10.3, which can be rebuilt
 from the Ghidra repo (https://github.com/NationalSecurityAgency/ghidra) per their rebuilding instructions.  
 The released version of Ghidra (10.1.4) will not work, it is missing some necessary functions.
 After rebuilding ghidra, find its installation zip in ghidra/build/dist.
 Unzip the install zip into a directory and set an GHIDRA\_INSTALL\_DIR environment variable to that,
 and set it in your .bashrc.
+
+Assuming you've performed the installation step, keep the Ghidra repo up to date using the 
+rebuildGhidra.sh script in the RESimGhidraPlugins repo described below.
 
 ## Install fork of gdb
 Use of the Ghidra plugin requires a modified version of gdb, available at
@@ -38,8 +41,11 @@ and click the Add icon (upper right).  Then navigate to and select:
 
 Your must then restart Ghidra.
 
-When the debugger is started, a number of RESim windows will appear.  Drag those to tabbed windows 
-per taste.
+When the debugger is started, a number of RESim windows should appear.  Drag those to tabbed windows 
+per taste. If RESim plugins don't seem to be present, use File / Configure and then click the 
+plugin icon in the upper right.  In the resulting dialog scroll down to the plugins having
+a "RESIM" prefix and make sure they are selected.  If the plugins are selected, but do not appear
+in the windows, use the Window / Debugger menu to select the RESim windows (the ones with the top icon).
 
 Use the RESim / Configure menu options to set the path to your customized gdb; the path to 
 the file system root of the target binary, the host:port of your Simics host, and to set the ARM architecture if needed.

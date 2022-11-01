@@ -115,8 +115,8 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     protected static class BookMarksTableModel
             extends DefaultEnumeratedColumnTableModel<BookMarksTableColumns, RESimBookMarksRow> {
 
-        public BookMarksTableModel() {
-            super("BookMarks", BookMarksTableColumns.class);
+        public BookMarksTableModel(PluginTool tool) {
+            super(tool, "BookMarks", BookMarksTableColumns.class);
         }
 
         @Override
@@ -218,7 +218,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     private final AutoService.Wiring autoServiceWiring;
 
 
-    protected final BookMarksTableModel bookMarksTableModel = new BookMarksTableModel();
+    protected final BookMarksTableModel bookMarksTableModel;
     protected GhidraTable bookMarksTable;
     protected GhidraTableFilterPanel<RESimBookMarksRow> bookMarkFilterPanel;
 
@@ -234,6 +234,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         super(plugin.getTool(), "BookMarks", plugin.getName());
         this.plugin = plugin;
         PluginTool tool = plugin.getTool();
+        bookMarksTableModel = new BookMarksTableModel(tool);
 
         
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);

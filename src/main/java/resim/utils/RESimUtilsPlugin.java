@@ -53,6 +53,7 @@ import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
 import ghidra.trace.model.Trace;
+import ghidra.trace.model.Lifespan;
 import ghidra.trace.model.modules.TraceModule;
 import ghidra.trace.model.modules.TraceModuleManager;
 import ghidra.trace.model.thread.TraceThread;
@@ -375,10 +376,10 @@ public class RESimUtilsPlugin extends Plugin {
             Range <Long> r = Range.closed(0L, 9999999L);
             TraceModuleManager tm = currentTrace.getModuleManager();
             try (UndoableTransaction tid =
-                    UndoableTransaction.start(currentTrace, "Add Module", true)) {
+                    UndoableTransaction.start(currentTrace, "Add Module")) {
                 
                 try {
-                    newmod = tm.addModule(path, name, ar, r);
+                    newmod = tm.addModule(path, name, ar, Lifespan.nowOn(0));
                     //Msg.debug(this,  "back from addModulePath");
                 } catch (DuplicateNameException e1) {
                     Msg.debug(this, getExceptString(e1));
@@ -402,7 +403,7 @@ public class RESimUtilsPlugin extends Plugin {
                 name = FilenameUtils.getBaseName(path);
                 //Msg.debug(this, "parseSO add section");
                 try (UndoableTransaction tid =
-                        UndoableTransaction.start(currentTrace, "Add Section", true)) {
+                        UndoableTransaction.start(currentTrace, "Add Section")) {
                     
                     try {
                         newmod.addSection(path, name, ar);
@@ -465,7 +466,7 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.debug(this, getExceptString(e));
             }
             try (UndoableTransaction tid =
-                    UndoableTransaction.start(currentTrace, "Get Thread", true)) {
+                    UndoableTransaction.start(currentTrace, "Get Thread")) {
                     TraceThreadManager manager = currentTrace.getThreadManager();
                     Collection<? extends TraceThread> all_threads = manager.getAllThreads();
                     for(TraceThread t : all_threads) {
@@ -1007,7 +1008,7 @@ public class RESimUtilsPlugin extends Plugin {
 
             Range <Long> r = Range.atLeast(0L);
             try (UndoableTransaction tid =
-                    UndoableTransaction.start(currentTrace, "Add Thread", true)) {
+                    UndoableTransaction.start(currentTrace, "Add Thread")) {
                 try {
                     TraceThreadManager manager = currentTrace.getThreadManager();
                     Collection<? extends TraceThread> all_threads = manager.getAllThreads();

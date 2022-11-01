@@ -119,8 +119,8 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
     protected static class WatchMarksTableModel
             extends DefaultEnumeratedColumnTableModel<WatchMarksTableColumns, RESimWatchMarksRow> {
 
-        public WatchMarksTableModel() {
-            super("WatchMarks", WatchMarksTableColumns.class);
+        public WatchMarksTableModel(PluginTool tool) {
+            super(tool, "WatchMarks", WatchMarksTableColumns.class);
         }
 
         @Override
@@ -190,7 +190,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
     private final AutoService.Wiring autoServiceWiring;
 
 
-    protected final WatchMarksTableModel watchMarksTableModel = new WatchMarksTableModel();
+    protected final WatchMarksTableModel watchMarksTableModel;
     protected GhidraTable watchMarksTable;
     protected GhidraTableFilterPanel<RESimWatchMarksRow> watchMarkFilterPanel;
 
@@ -204,6 +204,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         super(plugin.getTool(), "WatchMarks", plugin.getName());
         this.plugin = plugin;
         PluginTool tool = plugin.getTool();
+        watchMarksTableModel = new WatchMarksTableModel(tool);
 
         
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);

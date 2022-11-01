@@ -8,6 +8,14 @@ if [ -z $GHIDRA_INSTALL_DIR ]; then
     exit
 fi
 gradle build
+#
+# Copy build classes to bin
+#
+cp -ar build/classes/java/main bin/
+
+#
+# Copy jars, etc to Ghidra install dir
+#
 GHIDRA_EXTENSION_DIR=$GHIDRA_INSTALL_DIR/../Extensions
 mkdir -p $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/lib
 cp -a build/libs/RESimGhidraPlugins.jar $GHIDRA_EXTENSION_DIR/RESimGhidraPlugins/lib
