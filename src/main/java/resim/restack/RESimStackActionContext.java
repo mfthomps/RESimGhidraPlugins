@@ -17,9 +17,9 @@ package resim.restack;
 
 import java.awt.Component;
 
-import docking.ActionContext;
+import docking.DefaultActionContext;
 
-public class RESimStackActionContext extends ActionContext {
+public class RESimStackActionContext extends DefaultActionContext {
 
     private final RESimStackRow row;
 

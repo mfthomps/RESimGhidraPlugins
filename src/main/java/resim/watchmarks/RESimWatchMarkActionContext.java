@@ -17,9 +17,9 @@ package resim.watchmarks;
 
 import java.awt.Component;
 
-import docking.ActionContext;
+import docking.DefaultActionContext;
 
-public class RESimWatchMarkActionContext extends ActionContext {
+public class RESimWatchMarkActionContext extends DefaultActionContext {
 
     private final RESimWatchMarksRow row;
 

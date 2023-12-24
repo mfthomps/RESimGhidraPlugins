@@ -26,13 +26,15 @@ import javax.swing.*;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import docking.DefaultActionContext;
 import docking.ActionContext;
 import docking.WindowPosition;
 import docking.action.ToolBarData;
 import docking.action.builder.ActionBuilder;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel.EnumeratedTableColumn;
-import ghidra.app.plugin.core.debug.DebuggerCoordinates;
+import ghidra.debug.api.tracemgr.DebuggerCoordinates;
+import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
@@ -124,10 +126,10 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             return List.of(BookMarksTableColumns.INDEX);
         }
     }
-    protected class RefreshAction extends AbstractRefreshAction {
+    protected class MyRefreshAction extends AbstractRefreshAction {
         public static final String GROUP = DebuggerResources.GROUP_CONTROL;
 
-        public RefreshAction() {
+        public MyRefreshAction() {
             super(plugin);
             setToolBarData(new ToolBarData(ICON, GROUP, "4"));
             addLocalAction(this);
@@ -227,7 +229,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     private RESimBookMarkActionContext myActionContext;
     private RESimUtilsPlugin resimUtils; 
     private RESimBookMarksPlugin plugin;
-    private RefreshAction actionRefresh;
+    private MyRefreshAction actionRefresh;
     private AddAction actionAdd;
 
     public RESimBookMarksProvider(RESimBookMarksPlugin plugin)  {
@@ -329,7 +331,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Refresh")
             .onAction(c -> refresh())
             .buildAndInstall(tool);
-        actionRefresh = new RefreshAction();
+        actionRefresh = new MyRefreshAction();
         actionAdd = new AddAction();
 
         /* Do this here so the bookmarks get refreshed */

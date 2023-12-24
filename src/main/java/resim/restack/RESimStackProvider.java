@@ -32,12 +32,13 @@ import javax.swing.table.TableColumnModel;
 
 import docking.action.ToolBarData;
 import docking.action.builder.ActionBuilder;
+import docking.DefaultActionContext;
 import docking.ActionContext;
 import docking.WindowPosition;
 import docking.widgets.table.CustomToStringCellRenderer;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel;
 import docking.widgets.table.DefaultEnumeratedColumnTableModel.EnumeratedTableColumn;
-import ghidra.app.plugin.core.debug.DebuggerCoordinates;
+import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;

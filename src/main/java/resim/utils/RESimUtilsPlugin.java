@@ -3,7 +3,8 @@ package resim.utils;
 import agent.gdb.manager.impl.GdbManagerImpl;
 import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
 import agent.gdb.model.impl.GdbModelImpl;
-import agent.gdb.pty.linux.LinuxPtyFactory;
+import ghidra.pty.linux.LinuxPtyFactory;
+import ghidra.pty.PtyFactory;
 import docking.DockingUtils;
 import docking.action.KeyBindingData;
 import docking.action.builder.ActionBuilder;
@@ -26,8 +27,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+
 import ghidra.app.plugin.PluginCategoryNames;
-import ghidra.app.plugin.core.debug.DebuggerCoordinates;
+import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.event.*;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
@@ -42,13 +45,15 @@ import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.dbg.DebuggerObjectModel;
 import ghidra.dbg.target.TargetRegisterBank;
+import ghidra.dbg.DebuggerObjectModel.RefreshBehavior;
+
 import ghidra.dbg.util.ShellUtils;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
 import ghidra.util.Swing;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.ProgramManager;
-import ghidra.app.services.TraceRecorder;
+import ghidra.debug.api.model.TraceRecorder;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
@@ -58,7 +63,8 @@ import ghidra.trace.model.modules.TraceModule;
 import ghidra.trace.model.modules.TraceModuleManager;
 import ghidra.trace.model.thread.TraceThread;
 import ghidra.trace.model.thread.TraceThreadManager;
-import ghidra.util.database.UndoableTransaction;
+//import ghidra.util.database.UndoableTransaction;
+import ghidra.app.plugin.core.debug.service.model.RecorderPermanentTransaction;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
@@ -81,7 +87,6 @@ import com.google.common.collect.Range;
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //
             TraceSelectionPluginEvent.class, //
-            TraceRecorderAdvancedPluginEvent.class, //
 
         }, //
         servicesRequired = { //
@@ -375,8 +380,8 @@ public class RESimUtilsPlugin extends Plugin {
             // TBD what should the range be?  Most recent snap?"
             Range <Long> r = Range.closed(0L, 9999999L);
             TraceModuleManager tm = currentTrace.getModuleManager();
-            try (UndoableTransaction tid =
-                    UndoableTransaction.start(currentTrace, "Add Module")) {
+            try (RecorderPermanentTransaction tid =
+                    RecorderPermanentTransaction.start(currentTrace, "Add Module")) {
                 
                 try {
                     newmod = tm.addModule(path, name, ar, Lifespan.nowOn(0));
@@ -402,8 +407,8 @@ public class RESimUtilsPlugin extends Plugin {
                 path = (String) section.get("file");
                 name = FilenameUtils.getBaseName(path);
                 //Msg.debug(this, "parseSO add section");
-                try (UndoableTransaction tid =
-                        UndoableTransaction.start(currentTrace, "Add Section")) {
+                try (RecorderPermanentTransaction tid =
+                        RecorderPermanentTransaction.start(currentTrace, "Add Section")) {
                     
                     try {
                         newmod.addSection(path, name, ar);
@@ -465,8 +470,8 @@ public class RESimUtilsPlugin extends Plugin {
             }catch (Exception e) {
                 Msg.debug(this, getExceptString(e));
             }
-            try (UndoableTransaction tid =
-                    UndoableTransaction.start(currentTrace, "Get Thread")) {
+            try (RecorderPermanentTransaction tid =
+                    RecorderPermanentTransaction.start(currentTrace, "Get Thread")) {
                     TraceThreadManager manager = currentTrace.getThreadManager();
                     Collection<? extends TraceThread> all_threads = manager.getAllThreads();
                     for(TraceThread t : all_threads) {
@@ -554,7 +559,8 @@ public class RESimUtilsPlugin extends Plugin {
                  
             boolean existing = false;
             List<String> gdbCmdLine = ShellUtils.parseArgs(gdb_cmd);
-            model = new GdbModelImpl(new LinuxPtyFactory());
+            //model = new GdbModelImpl(new LinuxPtyFactory());
+            model = new GdbModelImpl(PtyFactory.local());
             return model
                     .startGDB(existing ? null : gdbCmdLine.get(0),
                         gdbCmdLine.subList(1, gdbCmdLine.size()).toArray(String[]::new))
@@ -949,8 +955,8 @@ public class RESimUtilsPlugin extends Plugin {
                     doRest();
                     doMapping();
                 }
-            }else if(event instanceof TraceRecorderAdvancedPluginEvent) {
-                Msg.debug(this,  "is trace advanced event");
+            //}else if(event instanceof TraceRecorderAdvancedPluginEvent) {
+            //    Msg.debug(this,  "is trace advanced event");
                // refreshRegisters();
 
             }else {
@@ -980,22 +986,23 @@ public class RESimUtilsPlugin extends Plugin {
             }
             // There's a chance of an NPE here if there is no "current frame"
            
-            TargetRegisterBank bank =
-                recorder.getTargetRegisterBank(current.getThread(), current.getFrame());
-            Msg.debug(this, "refreshRegisters got thread");
-           
-            // Now do the same to the bank as before
-            try {
-                Msg.debug(this, "refreshRegistrs invalidate caches");
-                bank.invalidateCaches().get();
-                Msg.debug(this, "refreshRegistrs fetch elements");
-                bank.fetchElements(true).get();
-                Msg.debug(this, "refreshRegistrs done");
+            Set<TargetRegisterBank> banks = recorder.getTargetRegisterBanks(current.getThread(), current.getFrame());
+            Msg.debug(this, "refreshRegisters got banks");
+            for (TargetRegisterBank bank : banks) {
+ 
+                // Now do the same to the bank as before
+                try {
+                    Msg.debug(this, "refreshRegistrs invalidate caches");
+                    bank.invalidateCaches().get();
+                    Msg.debug(this, "refreshRegistrs fetch elements");
+                    bank.fetchElements(RefreshBehavior.REFRESH_ALWAYS).get();
+                    Msg.debug(this, "refreshRegistrs done");
 
-            } catch (InterruptedException | ExecutionException e) {
-                Msg.error(this,  getExceptString(e));
+                } catch (InterruptedException | ExecutionException e) {
+                    Msg.error(this,  getExceptString(e));
+                }
+                Msg.debug(this, "refreshRegisters all done");
             }
-            Msg.debug(this, "refreshRegisters all done");
         }
         public boolean connected() {
            if(impl != null) {
@@ -1007,8 +1014,8 @@ public class RESimUtilsPlugin extends Plugin {
         protected void addThread(java.util.HashMap<Object, Object> entry) {
 
             Range <Long> r = Range.atLeast(0L);
-            try (UndoableTransaction tid =
-                    UndoableTransaction.start(currentTrace, "Add Thread")) {
+            try (RecorderPermanentTransaction tid =
+                    RecorderPermanentTransaction.start(currentTrace, "Add Thread")) {
                 try {
                     TraceThreadManager manager = currentTrace.getThreadManager();
                     Collection<? extends TraceThread> all_threads = manager.getAllThreads();

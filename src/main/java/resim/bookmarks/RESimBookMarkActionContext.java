@@ -17,9 +17,9 @@ package resim.bookmarks;
 
 import java.awt.Component;
 
-import docking.ActionContext;
+import docking.DefaultActionContext;
 
-public class RESimBookMarkActionContext extends ActionContext {
+public class RESimBookMarkActionContext extends DefaultActionContext {
 
     private final RESimBookMarksRow row;
 

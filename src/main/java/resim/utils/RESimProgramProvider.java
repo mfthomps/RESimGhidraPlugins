@@ -19,7 +19,6 @@ import java.awt.BorderLayout;
 
 import javax.swing.*;
 
-import docking.ActionContext;
 import docking.WindowPosition;
 import docking.action.DockingAction;
 import docking.action.ToolBarData;
