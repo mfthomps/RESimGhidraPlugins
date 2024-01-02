@@ -22,8 +22,8 @@ import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 
 /**
- * A plugin to show tool tip text for hovering over memory reference values in the listing.
- *
+ * A plugin to show tool tip text for hovering a register to see its value.
+ *  NOTE this is no longer used because Ghidra now has a register value hover function.
  * 
  */
 //@formatter:off
@@ -31,7 +31,7 @@ import ghidra.framework.plugintool.util.PluginStatus;
 	status = PluginStatus.RELEASED,
 	packageName = CorePluginPackage.NAME,
 	category = PluginCategoryNames.CODE_VIEWER,
-	shortDescription = "Regiseter Operand Hover",
+	shortDescription = "Register Operand Hover",
 	description = "Pop-up display value of register operands.",
 	servicesProvided = { ListingHoverService.class }
 )

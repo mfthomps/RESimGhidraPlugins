@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ *  NOTE this is no longer used because Ghidra now has a register value hover function.
+ */
 package resim.hover;
 
 import java.math.BigInteger;
@@ -61,7 +64,7 @@ public class RegisterOperandListingHover extends AbstractConfigurableHover
 		super(tool, PRIORITY);
 	}
     /**
-     * Get the instance of the GDBManagerImpl using tool.getService -- this is not currently used, see the build method.
+     * Get the instance of the GDBManagerImpl using tool.getService
      * @return The instance.
      */
     public GdbManagerImpl getGdbManager() throws Exception {

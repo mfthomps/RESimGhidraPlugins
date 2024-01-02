@@ -46,7 +46,7 @@ import resim.libs.RESimLibs;
 public class ReferenceOperandListingHover extends AbstractConfigurableHover 
 		implements ListingHoverService {
     // TBD determine reasonable priority
-	private static final int PRIORITY = 99;
+	private static final int PRIORITY = 101;
 	private static final String NAME = "Referencee Operand Display";
 	private static final String DESCRIPTION =
 		"Display content of referenced memory.";
@@ -56,7 +56,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 		super(tool, PRIORITY);
 	}
     /**
-     * Get the instance of the GDBManagerImpl using tool.getService -- this is not currently used, see the build method.
+     * Get the instance of the GDBManagerImpl using tool.getService 
      * @return The instance.
      */
     public GdbManagerImpl getGdbManager() throws Exception {

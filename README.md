@@ -3,19 +3,14 @@ These are a set of plugins for the Ghidra Debugger to allow Ghidra to be used as
 disassembler/debugger with the RESim reverse engineering platform.
 See https://github.com/mfthomps/RESim
 
-**NOTE:** This is preliminary work.  While many of the RESim IDA Pro plugin features 
-are replicated here, it is not complete and not fully tested.
+**NOTE:** This is preliminary work.  While most of the RESim IDA Pro plugin features 
+are replicated here, it is not entirely complete and not fully tested.
 
 ## Install Ghidra from its repo
-These plugins currently require Ghidra version 10.3, which can be rebuilt
-from the Ghidra repo (https://github.com/NationalSecurityAgency/ghidra) per their rebuilding instructions.  
-The released version of Ghidra (10.1.4) will not work, it is missing some necessary functions.
-After rebuilding ghidra, find its installation zip in ghidra/build/dist.
-Unzip the install zip into a directory and set an GHIDRA\_INSTALL\_DIR environment variable to that,
+These plugins have been tested with Ghidra release 11.0.
+Get that Release from \url{https://github.com/NationalSecurityAgency/ghidra}.
+Unzip the release zip into a directory and set an GHIDRA\_INSTALL\_DIR environment variable to that,
 and set it in your .bashrc.
-
-Assuming you've performed the installation step, keep the Ghidra repo up to date using the 
-rebuildGhidra.sh script in the RESimGhidraPlugins repo described below.
 
 ## Install fork of gdb
 Use of the Ghidra plugin requires a modified version of gdb, available at
@@ -51,9 +46,9 @@ Use the RESim / Configure menu options to set the path to your customized gdb; t
 the file system root of the target binary, the host:port of your Simics host, and to set the ARM architecture if needed.
 See the RESim-UsersGuide.pdf for additional information on using the Ghidra plugin with RESim.
 
-## Ghidra Debugger hover plugins
-The hover plugins included herein are largely separable from other plugs.  They display register and address values
-when the mouse hovers over operands.
+## Ghidra Debugger hover plugin
+The hover plugin included herein is largely separable from other plugs.  It displays reference addresses and values
+when the mouse hovers over operands.   Ghidra now includes a native hover function for displaying register values.
 
 ## Development
 If you are developing the plugin with Eclipse, you can test the plugin within the Ghidra repo environment

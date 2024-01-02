@@ -9,6 +9,7 @@ import ghidra.app.plugin.core.debug.gui.register.RegisterRow;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.GenericAddress;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.lang.InstructionPrototype;
 import ghidra.program.model.lang.Register;
@@ -55,9 +56,10 @@ public class RESimLibs {
         Address retval = null;
         int opIndex = loc.getOperandIndex();
         Object[] operands = instruction.getOpObjects(opIndex);
-        if (operands.length == 1) {
+        Msg.debug(src,  "opIndex is "+opIndex+" len of operands "+operands.length);
+        if (operands.length == 0) {
             //return operands[0];
-            Msg.debug(src,  "op len is 1");
+            Msg.debug(src,  "op len is 0");
             return null;
         }
         
@@ -81,9 +83,9 @@ public class RESimLibs {
         boolean domul = false;
         long preval = 0;
         for(Object o : list){
-            //Msg.debug(src,  "type: "+o.getClass()+" "+o.toString());        
+            Msg.debug(src,  "type: "+o.getClass()+" "+o.toString());        
           
-            //Msg.debug(src, "preval "+preval+" sum "+sum);
+            Msg.debug(src, "preval "+preval+" sum "+sum);
             if(!in_brackets){
                 if(o instanceof Character){
                     if((Character) o == '['){
@@ -102,7 +104,7 @@ public class RESimLibs {
                         domul = true;
                         //Msg.debug(src, "setting multiply preval was "+preval);
                     }else if ((Character) o == ']'){
-                        //Msg.debug(src, "got end bracket preval was "+preval);
+                        Msg.debug(src, "got end bracket preval was "+preval);
                         sum = sum + preval*sign;
                         found_brackets = true;
                         break;
@@ -121,6 +123,10 @@ public class RESimLibs {
                     }else{
                         preval = s.getSignedValue();
                     }
+                }else if(o instanceof GenericAddress){
+                    GenericAddress a = (GenericAddress) o;
+                    preval = a.getOffset();
+                    Msg.debug(src, "generic address value "+preval);
                 }
             }
         }
