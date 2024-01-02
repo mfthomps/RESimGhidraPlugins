@@ -36,6 +36,7 @@ import ghidra.app.plugin.core.debug.event.*;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
 import ghidra.app.services.DebuggerModelService;
+import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.plugin.core.colorizer.*;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
@@ -43,9 +44,11 @@ import ghidra.framework.preferences.Preferences;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
+import ghidra.app.plugin.core.debug.service.modules.DebuggerStaticMappingUtils;
 import ghidra.dbg.DebuggerObjectModel;
 import ghidra.dbg.target.TargetRegisterBank;
 import ghidra.dbg.DebuggerObjectModel.RefreshBehavior;
+
 
 import ghidra.dbg.util.ShellUtils;
 import ghidra.program.model.listing.Program;
@@ -54,6 +57,7 @@ import ghidra.util.Swing;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.ProgramManager;
 import ghidra.debug.api.model.TraceRecorder;
+import ghidra.program.util.ProgramLocation;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
@@ -63,8 +67,11 @@ import ghidra.trace.model.modules.TraceModule;
 import ghidra.trace.model.modules.TraceModuleManager;
 import ghidra.trace.model.thread.TraceThread;
 import ghidra.trace.model.thread.TraceThreadManager;
+import ghidra.trace.model.DefaultTraceLocation;
+import ghidra.trace.model.TraceLocation;
+
 //import ghidra.util.database.UndoableTransaction;
-import ghidra.app.plugin.core.debug.service.model.RecorderPermanentTransaction;
+import db.Transaction;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
@@ -181,19 +188,6 @@ public class RESimUtilsPlugin extends Plugin {
             
             return retval;
         }
-/*
-        private DebuggerObjectsProvider getDebuggerObjectsProvider() throws Exception {
-            DebuggerObjectsProvider dop = (DebuggerObjectsProvider) tool.getComponentProvider("Objects");
-            if(dop == null) {
-                Msg.debug(this,  "dop is none");
-                DebuggerObjectsPlugin objects =
-                    (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
-                return objects.getProvider(0);
-            }else {
-                return dop;
-            }
-        }
-*/
         /**
          * Refresh the gdb client state values.
          * 
@@ -359,8 +353,10 @@ public class RESimUtilsPlugin extends Plugin {
             java.util.HashMap<Object, Object> somap = (java.util.HashMap<Object, Object>) obj;
 
             Msg.debug(this,"did hash parseSO\n");
-            Msg.debug(this,"size of hashmap is "+ somap.size());
-            addModule(somap);    
+            Msg.debug(this,"size x of hashmap is "+ somap.size());
+            Msg.debug(this,"call addModule");
+            this.addModule(somap);    
+            Msg.debug(this,"back from addModule");
             
         }
         protected void addModule(java.util.HashMap<Object, Object> somap){
@@ -368,50 +364,133 @@ public class RESimUtilsPlugin extends Plugin {
              * Add a module and its sections, as defined by a RESim SO map json, to the Ghidra modules
              * @param somap The json hashmap
              */
-            Long pid_o = (Long) somap.get("group_leader");
-            Msg.debug(this,"in parseSO pid_o is "+pid_o);
-            Long start = (Long) somap.get("prog_start");
-            Long end = (Long) somap.get("prog_end");
-            String path = (String) somap.get("prog");
-            String name = (String) FilenameUtils.getBaseName(path);
-            Msg.debug(this,  "get addr");
-            AddressRangeImpl ar = new AddressRangeImpl(this.addrDyn(start), this.addrDyn(end));
-            TraceModule newmod = null;
-            // TBD what should the range be?  Most recent snap?"
-            Range <Long> r = Range.closed(0L, 9999999L);
-            TraceModuleManager tm = currentTrace.getModuleManager();
-            try (RecorderPermanentTransaction tid =
-                    RecorderPermanentTransaction.start(currentTrace, "Add Module")) {
-                
-                try {
-                    newmod = tm.addModule(path, name, ar, Lifespan.nowOn(0));
-                    //Msg.debug(this,  "back from addModulePath");
-                } catch (DuplicateNameException e1) {
-                    Msg.debug(this, getExceptString(e1));
-                }
-            }
+            Msg.debug(this,"in addModule");
 
-            //Msg.debug(this, "bout to do sections?");
             ArrayList <java.util.HashMap<Object, Object>> sections=null;
             try {
                 sections = (ArrayList <java.util.HashMap<Object, Object>>) somap.get("sections");
             }catch (Exception e) {
                 Msg.debug(this, getExceptString(e));
             }
+
+            Long start = 0L;
+            Long end = 0L;
+            Program current_program = getProgram();
+            String target_path = current_program.getExecutablePath();
+            String target_base = (String) FilenameUtils.getName(target_path);
+
+            String prog_path = (String) somap.get("prog_local_path");
+            String prog_base = (String) FilenameUtils.getName(prog_path);
+            String module_path = null;
+            if(target_base.equals(prog_base)){
+                String pid_o = (String) somap.get("group_leader");
+                Msg.debug(this,"addModule, is main prog, pid_o is "+pid_o);
+                start = (Long) somap.get("prog_start");
+                end = (Long) somap.get("prog_end");
+                module_path = prog_path;
+            }else{
+                Msg.debug(this,"addModule program is not main, search libs for target_base "+target_base);
+                String lib_path = null;
+                for(Object o : sections) {
+                    java.util.HashMap<Object, Object> section = (java.util.HashMap<Object, Object>) o;
+                    lib_path = (String) section.get("local_path");
+                    if(lib_path == null){
+                        lib_path = (String) section.get("file");
+                    } 
+                    String lib_base = (String) FilenameUtils.getName(lib_path);
+                    if(target_base.equals(lib_base)){
+                        Msg.debug(this,"addModule found lib that matches prog at "+lib_path);
+                        
+                        start = (Long) section.get("locate");
+                        end = (Long) section.get("end");
+                        module_path = lib_path;
+                        break;
+                    }
+                }
+            }
+            if(module_path == null){
+                Msg.error(this, "Failed to find module for target "+target_path);
+                return;
+            } 
+            Msg.debug(this,  "get addr path "+module_path+" start: "+String.format("0x%x", start)+" end: "+String.format("0x%x", end));
+            AddressRangeImpl ar = new AddressRangeImpl(this.addrDyn(start), this.addrDyn(end));
+
+            DebuggerModelService modelService = tool.getService(DebuggerModelService.class);
+
+            DebuggerTraceManagerService traceManager = tool.getService(DebuggerTraceManagerService.class);
+
+            DebuggerCoordinates current_manager = traceManager.getCurrent();
+            Trace  current_trace = traceManager.getCurrentTrace();
+
+            TraceModuleManager tm = current_manager.getTrace().getModuleManager();
+
+            TraceRecorder recorder = modelService.getRecorder(current_manager.getTrace());
+
+            Long snap = recorder.getSnap();
+            TraceModule progmod = null;
+            String module_base = (String) FilenameUtils.getName(module_path);
+
+            DebuggerStaticMappingService mappings = tool.getService(DebuggerStaticMappingService.class);
+            AddressSpace dynRam = current_trace.getBaseAddressFactory().getDefaultAddressSpace();
+            AddressSpace statRam = current_program.getAddressFactory().getDefaultAddressSpace();
+            Long length = end - start;
+
+            Msg.debug(this,  "start transaction");
+            try (Transaction tid =
+                    currentTrace.openTransaction("Update Module")) {
+                
+                try {
+                    //progmod = tm.getLoadedModuleByPath(snap, module_path);
+
+                    Collection<? extends TraceModule> module_collection = tm.getModulesByPath(module_path);
+                    progmod = module_collection.iterator().next();
+                    if(progmod == null){
+                        Msg.debug(this,  "Failed to find existing module at path "+module_path+" base "+module_base+" count "+module_collection.size()+". Add new module.");
+                        progmod = tm.addModule(module_path, target_base, ar, Lifespan.nowOn(0));
+                    }else{
+                        progmod.setRange(ar);
+                    }
+
+
+                    TraceLocation from = new DefaultTraceLocation(current_trace, null, Lifespan.nowOn(0), dynRam.getAddress(start));
+                    ProgramLocation to = new ProgramLocation(current_program, statRam.getAddress(start));
+                    DebuggerStaticMappingUtils.addMapping(from, to, length, false);
+                    /*
+                    mappings.addMapping(
+                        new DefaultTraceLocation(current_trace, null, Lifespan.nowOn(0),
+                            dynRam.getAddress(start)),
+                        new ProgramLocation(current_program, statRam.getAddress(start)),
+                            length, false);
+                    */
+                    Msg.debug(this,  "did addMapping start "+String.format("0x%x", start)+" length "+length);
+                } catch (Exception e1) {
+                    Msg.debug(this, getExceptString(e1));
+                }
+            }
+            Msg.debug(this,  "done transaction");
+
+            //Msg.debug(this, "bout to do sections?");
             Msg.debug(this,  "parseSO, num sections is "+sections.size());
+            String path = null;
+            String name = null;
             for(Object o : sections) {
                 java.util.HashMap<Object, Object> section = (java.util.HashMap<Object, Object>) o;
                 start = (Long) section.get("locate");
                 end = (Long) section.get("end");
                 ar = new AddressRangeImpl(this.addrDyn(start), this.addrDyn(end));
-                path = (String) section.get("file");
-                name = FilenameUtils.getBaseName(path);
+                path = (String) section.get("local_path");
+                if(path == null){
+                    path = (String) section.get("file");
+                } 
+                name = FilenameUtils.getName(path);
+                Msg.debug(this,  "section path "+path+" start: "+String.format("0x%x", start)+" end: "+String.format("0x%x", end));
                 //Msg.debug(this, "parseSO add section");
-                try (RecorderPermanentTransaction tid =
-                        RecorderPermanentTransaction.start(currentTrace, "Add Section")) {
+                try (Transaction tid =
+                        currentTrace.openTransaction("Add Section")) {
                     
                     try {
-                        newmod.addSection(path, name, ar);
+                        progmod.addSection(path, name, ar);
+                        //Msg.debug(this, "did add section "+path);
                     } catch (DuplicateNameException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -430,7 +509,7 @@ public class RESimUtilsPlugin extends Plugin {
             String cmd = "getSOMap()";
             doRESim(cmd).thenApply(so_json ->{
                 if(so_json != null) {
-                    parseSO(so_json);
+                    this.parseSO(so_json);
                     didMapping = true;
                 }else {
                     Msg.error(this,  "Failed to getSOMap");
@@ -470,8 +549,8 @@ public class RESimUtilsPlugin extends Plugin {
             }catch (Exception e) {
                 Msg.debug(this, getExceptString(e));
             }
-            try (RecorderPermanentTransaction tid =
-                    RecorderPermanentTransaction.start(currentTrace, "Get Thread")) {
+            try (Transaction tid =
+                    currentTrace.openTransaction("Get Thread")) {
                     TraceThreadManager manager = currentTrace.getThreadManager();
                     Collection<? extends TraceThread> all_threads = manager.getAllThreads();
                     for(TraceThread t : all_threads) {
@@ -762,13 +841,13 @@ public class RESimUtilsPlugin extends Plugin {
 
             RESimListingGoToAction lc = new RESimListingGoToAction("Goto address", this);
             tool.addAction(lc);
-            /*
+
             new ActionBuilder("Manual map", getName())
                 .menuPath(MENU_RESIM, "Manual map")
                 .menuGroup(MENU_RESIM, "map")
                 .onAction(c -> manualMap())
                 .buildAndInstall(tool);
-                */
+
             /*
              * Main menu RESim entries
              */
@@ -1014,8 +1093,8 @@ public class RESimUtilsPlugin extends Plugin {
         protected void addThread(java.util.HashMap<Object, Object> entry) {
 
             Range <Long> r = Range.atLeast(0L);
-            try (RecorderPermanentTransaction tid =
-                    RecorderPermanentTransaction.start(currentTrace, "Add Thread")) {
+            try (Transaction tid =
+                    currentTrace.openTransaction("Add Thread")) {
                 try {
                     TraceThreadManager manager = currentTrace.getThreadManager();
                     Collection<? extends TraceThread> all_threads = manager.getAllThreads();
@@ -1041,7 +1120,7 @@ public class RESimUtilsPlugin extends Plugin {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            this.doRest();
+            //this.doRest();
             this.doMapping();
         }
 
