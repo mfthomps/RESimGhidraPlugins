@@ -52,15 +52,24 @@ import ghidra.dbg.DebuggerObjectModel.RefreshBehavior;
 
 import ghidra.dbg.util.ShellUtils;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionManager;
+import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.util.Msg;
 import ghidra.util.Swing;
+import ghidra.app.util.demangler.*;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.ProgramManager;
 import ghidra.debug.api.model.TraceRecorder;
 import ghidra.program.util.ProgramLocation;
 import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
+import ghidra.program.model.block.CodeBlockIterator;
+import ghidra.program.model.block.CodeBlockReference;
+import ghidra.program.model.block.CodeBlockReferenceIterator;
 import ghidra.trace.model.Trace;
 import ghidra.trace.model.Lifespan;
 import ghidra.trace.model.modules.TraceModule;
@@ -82,8 +91,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.FileWriter;
 import java.lang.Thread;
 import com.google.common.collect.Range;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonWriter;
+
 @PluginInfo( //
         shortDescription = "RESim Utils", //
         description = "Manage connecting Ghidra to the Simics GDB server, manage the other RESim plugins and provide common functions.", //
@@ -899,6 +915,11 @@ public class RESimUtilsPlugin extends Plugin {
             .menuGroup(MENU_RESIM, "color")
             .onAction(c -> colorBlocks())
             .buildAndInstall(tool);
+            new ActionBuilder("Dump Artifacts", getName())
+            .menuPath(MENU_RESIM, "Dump artifacts")
+            .menuGroup(MENU_RESIM, "artifacts")
+            .onAction(c -> dumpArtifacts())
+            .buildAndInstall(tool);
             new ActionBuilder("Foo Bar", getName())
             .menuPath(MENU_RESIM, "Foo bar")
             .menuGroup(MENU_RESIM, "Foo")
@@ -1122,6 +1143,191 @@ public class RESimUtilsPlugin extends Plugin {
             }
             //this.doRest();
             this.doMapping();
+        }
+        protected void dumpArtifacts() {
+            program = getProgram();
+            String target_root = System.getenv("target_root");
+            if(target_root == null){
+                Msg.error(this, "target_root not defined");
+                return;
+            }
+            String ida_analysis = System.getenv("IDA_ANALYSIS");
+            if(ida_analysis == null){
+                Msg.error(this, "ida_analysis not defined");
+            }
+            String target_image_path = program.getExecutablePath();
+            String relative = null;
+            if(target_image_path.startsWith(target_root)){
+                relative = target_image_path.substring(target_root.length());
+                Msg.debug(this,"relative "+relative);
+            }else{
+                Msg.error(this,"target image path "+target_image_path+" does not start with root "+target_root);
+            }
+            File root_file = new File(target_root);
+            String base_name = root_file.getName();
+            File analysis_file = new File(ida_analysis+File.separator+base_name+relative);
+            String analysis_parent = analysis_file.getParent();
+            File parent_file = new File(analysis_parent);
+            parent_file.mkdirs();
+            String outfuns = ida_analysis+File.separator+base_name+relative+".funs";
+            String outblocks = ida_analysis+File.separator+base_name+relative+".blocks";
+            dumpFunctions(outfuns);
+            dumpBlocks(outblocks);
+            String outexternals = ida_analysis+File.separator+base_name+relative+".imports";
+            dumpExternals(outexternals);
+
+        }
+        protected void dumpFunctions(String outpath){
+            program = getProgram();
+            File outputFile = new File(outpath);
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+            JsonWriter jsonWriter = null;
+            try {
+                jsonWriter = new JsonWriter(new FileWriter(outputFile));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            JsonObject thefuns = new JsonObject();
+
+            FunctionManager fm = program.getFunctionManager();
+            for(Function f : fm.getFunctions(true)){
+                Address min = f.getBody().getMinAddress();
+                Address max = f.getBody().getMaxAddress();
+                JsonObject function = new JsonObject();
+
+                String fname = f.getName();
+                /*
+                DemangledObject demo = DemanglerUtil.demangle(f.getName());
+                if(demo != null) {
+                    fname = demo.getDemangledName();
+                    Msg.info(this,  "demangled to "+fname);
+                }
+                */
+                function.addProperty("name",fname);
+                function.addProperty("start", min.getOffset());
+                function.addProperty("end", max.getOffset());
+                String fun_addr = String.valueOf(min.getOffset());
+                thefuns.add(fun_addr, function);
+            }
+            gson.toJson(thefuns, jsonWriter);
+            try {
+                jsonWriter.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            Msg.info(this, "Json of functions written to "+outpath);
+        }
+        protected void dumpExternals(String outpath){
+            program = getProgram();
+            File outputFile = new File(outpath);
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+            JsonWriter jsonWriter = null;
+            try {
+                jsonWriter = new JsonWriter(new FileWriter(outputFile));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            JsonObject thefuns = new JsonObject();
+
+            FunctionManager fm = program.getFunctionManager();
+            for(Function f : fm.getExternalFunctions()){
+                Address addr = f.getEntryPoint();
+                //ExternalLocation loc = f.getExternalLocation();
+                //Address addr = loc.getAddress();
+                String fun_addr = String.valueOf(addr.getOffset());
+                String fname = f.getName();
+                Msg.info(this,  "external addr is "+fun_addr+" name "+fname);
+                /*
+                DemangledObject demo = DemanglerUtil.demangle(f.getName());
+                if(demo != null) {
+                    fname = demo.getDemangledName();
+                    Msg.info(this,  "demangled to "+fname);
+                }
+                */
+                thefuns.addProperty(fun_addr, fname);
+            }
+            gson.toJson(thefuns, jsonWriter);
+            try {
+                jsonWriter.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            Msg.info(this, "Json of functions written to "+outpath);
+        }
+        protected void dumpBlocks(String outpath){
+            program = getProgram();
+            File outputFile = new File(outpath);
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+            JsonWriter jsonWriter = null;
+            try {
+                jsonWriter = new JsonWriter(new FileWriter(outputFile));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            JsonObject theblocks = new JsonObject();
+
+            BasicBlockModel bbm = new BasicBlockModel(program);
+            FunctionManager fm = program.getFunctionManager();
+            for(Function f : fm.getFunctions(true)){
+                Address min = f.getBody().getMinAddress();
+                Address max = f.getBody().getMaxAddress();
+                AddressSetView set = new AddressSet(min, max);
+                CodeBlockIterator cbi = null;
+                try {
+                    cbi = bbm.getCodeBlocksContaining(set, TaskMonitor.DUMMY);
+                } catch (CancelledException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                JsonObject function = new JsonObject();
+                function.addProperty("name", min.getOffset());
+                JsonArray funblocks = new JsonArray();
+                for(CodeBlock cb : cbi){
+                    Address block_min = cb.getMinAddress();
+                    Address block_max = cb.getMaxAddress();
+                    JsonObject block = new JsonObject();
+                    block.addProperty("start_ea", block_min.getOffset());
+                    block.addProperty("end_ea", block_min.getOffset());
+                    JsonArray succs_json = new JsonArray();
+                    CodeBlockReferenceIterator succs = null;
+                    try {
+                        succs = cb.getDestinations(TaskMonitor.DUMMY);
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                   try {
+                        while(succs.hasNext()){
+                            CodeBlockReference s = succs.next();
+                            succs_json.add(s.getDestinationAddress().getOffset());
+                        }
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    block.add("succs", succs_json);
+                    funblocks.add(block);
+                }
+                function.add("blocks", funblocks);
+                String fun_addr = String.valueOf(min.getOffset());
+                theblocks.add(fun_addr, function);
+            }
+            gson.toJson(theblocks, jsonWriter);
+            try {
+                jsonWriter.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            Msg.debug(this, "Json of basic blocks written to "+outpath);
         }
 
         protected void colorBlocks() {
