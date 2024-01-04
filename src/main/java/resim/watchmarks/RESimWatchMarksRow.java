@@ -27,15 +27,15 @@ public class RESimWatchMarksRow {
     private int index;
     Address pc;
     long cycle;
-    long pid;
-
-    public RESimWatchMarksRow(RESimWatchMarksProvider provider, int index, String msg, Address pc, long cycle, long pid) {
+    String tid;
+    
+    public RESimWatchMarksRow(RESimWatchMarksProvider provider, int index, String msg, Address pc, long cycle, String tid) {
         this.provider = provider;
         this.msg = msg;
         this.index = index;
         this.pc = pc;
         this.cycle = cycle;
-        this.pid = pid;
+        this.tid = tid;
     }
 
 
@@ -51,8 +51,8 @@ public class RESimWatchMarksRow {
     public String getMsg() {
         return msg;
     }
-    public long getPid() {
-        return pid;
+    public String getTid() {
+        return tid;
     }
     public long getCycle() {
         return cycle;

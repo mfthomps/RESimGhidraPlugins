@@ -42,6 +42,7 @@ import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.framework.preferences.Preferences;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.app.plugin.core.debug.service.modules.DebuggerStaticMappingUtils;
@@ -55,6 +56,8 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.symbol.ExternalLocation;
+import ghidra.program.model.symbol.Symbol;
+import ghidra.program.model.symbol.SymbolTable;
 import ghidra.util.Msg;
 import ghidra.util.Swing;
 import ghidra.app.util.demangler.*;
@@ -498,6 +501,9 @@ public class RESimUtilsPlugin extends Plugin {
                 if(path == null){
                     path = (String) section.get("file");
                 } 
+                if(path.equals("unknown")) {
+                	continue;
+                }
                 name = FilenameUtils.getName(path);
                 Msg.debug(this,  "section path "+path+" start: "+String.format("0x%x", start)+" end: "+String.format("0x%x", end));
                 //Msg.debug(this, "parseSO add section");
@@ -509,7 +515,7 @@ public class RESimUtilsPlugin extends Plugin {
                         //Msg.debug(this, "did add section "+path);
                     } catch (DuplicateNameException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        //e.printStackTrace();
                     }
                     //Msg.debug(this, "parseSO back from add section");
                 }
@@ -1235,13 +1241,22 @@ public class RESimUtilsPlugin extends Plugin {
             JsonObject thefuns = new JsonObject();
 
             FunctionManager fm = program.getFunctionManager();
+            SymbolTable st = program.getSymbolTable();
             for(Function f : fm.getExternalFunctions()){
-                Address addr = f.getEntryPoint();
+                AddressIterator x = f.getBody().getAddresses(true);
+                for(Address ax : x) {
+                	long val = ax.getOffset();
+                	Msg.info(this,  "addr val "+val);
+                }
+                //Address addr = f.getEntryPoint();
                 //ExternalLocation loc = f.getExternalLocation();
                 //Address addr = loc.getAddress();
-                String fun_addr = String.valueOf(addr.getOffset());
+                //String fun_addr = String.valueOf(addr.getOffset());
                 String fname = f.getName();
-                Msg.info(this,  "external addr is "+fun_addr+" name "+fname);
+                Symbol s = st.getExternalSymbol(fname);
+                Address addr = s.getAddress();
+                String fun_addr = String.valueOf(addr.getOffset());
+                Msg.info(this,  "external sym addr is "+fun_addr+" name "+fname);
                 /*
                 DemangledObject demo = DemanglerUtil.demangle(f.getName());
                 if(demo != null) {

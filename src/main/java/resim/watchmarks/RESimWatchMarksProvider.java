@@ -68,7 +68,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         PC("PC", Address.class, RESimWatchMarksRow::getProgramCounter),
         CYCLE("cycle", Long.class, RESimWatchMarksRow::getCycle),
         MSG("Message", String.class, RESimWatchMarksRow::getMsg),
-        PID("pid", Long.class, RESimWatchMarksRow::getPid);
+        TID("tid", String.class, RESimWatchMarksRow::getTid);
 
         private final String header;
         private final Function<RESimWatchMarksRow, ?> getter;
@@ -369,8 +369,8 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         long ip = (long) entry.get("ip");
         Address ip_addr = resimUtils.addr(ip);
         long cycle = (long) entry.get("cycle");
-        long pid = (long) entry.get("pid");
-         RESimWatchMarksRow wmr = new RESimWatchMarksRow(this, index, msg, ip_addr, cycle, pid);
+        String tid = (String) entry.get("tid");
+         RESimWatchMarksRow wmr = new RESimWatchMarksRow(this, index, msg, ip_addr, cycle, tid);
          add(wmr); 
     }
     @SuppressWarnings("unchecked")
