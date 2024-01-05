@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import ghidra.app.nav.NavigationUtils;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
@@ -38,11 +39,15 @@ import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
 import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.plugin.core.colorizer.*;
+import ghidra.framework.options.Options;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.framework.preferences.Preferences;
+import ghidra.framework.store.LockException;
+import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressIterator;
+import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.app.plugin.core.debug.service.modules.DebuggerStaticMappingUtils;
@@ -53,14 +58,28 @@ import ghidra.dbg.DebuggerObjectModel.RefreshBehavior;
 
 import ghidra.dbg.util.ShellUtils;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.MemoryBlock;
+import ghidra.program.model.mem.MemoryBlockException;
+import ghidra.program.model.mem.MemoryConflictException;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.symbol.ExternalLocation;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolTable;
 import ghidra.util.Msg;
+import ghidra.util.NumericUtilities;
 import ghidra.util.Swing;
+import ghidra.app.util.bin.ByteProvider;
+import ghidra.app.util.bin.FileBytesProvider;
+import ghidra.app.util.bin.format.pe.NTHeader;
+import ghidra.app.util.bin.format.pe.OptionalHeader;
+import ghidra.app.util.bin.format.pe.PortableExecutable;
+import ghidra.app.util.bin.format.pe.PortableExecutable.SectionLayout;
 import ghidra.app.util.demangler.*;
+import ghidra.app.util.opinion.CoffLoader;
+import ghidra.app.util.opinion.ElfLoader;
+import ghidra.app.util.opinion.PeLoader;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.ProgramManager;
 import ghidra.debug.api.model.TraceRecorder;
@@ -86,6 +105,7 @@ import ghidra.trace.model.TraceLocation;
 import db.Transaction;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
+import ghidra.util.exception.NotFoundException;
 import ghidra.util.task.TaskMonitor;
 import java.awt.Color;
 import java.awt.event.InputEvent;
@@ -1150,6 +1170,51 @@ public class RESimUtilsPlugin extends Plugin {
             //this.doRest();
             this.doMapping();
         }
+        public Long getCoffOriginalImageBase() {
+        	long retval = -1l;
+        	Msg.info(this,  "ingetCoffOrig...");
+            List<FileBytes> allFileBytes = program.getMemory().getAllFileBytes();
+            if (allFileBytes.isEmpty()) {
+                Msg.error(this,
+                    "Unable to retrieve Program header: no FileBytes", null);
+                return -1l;
+            }
+            FileBytes fileBytes = allFileBytes.get(0); // Should be that of main imported file
+            ByteProvider bprovider = new FileBytesProvider(fileBytes); // close not required
+            try {
+                PortableExecutable pe =
+                    new PortableExecutable(bprovider, SectionLayout.FILE, true, true);
+                NTHeader ntHeader = pe.getNTHeader(); // will be null if header parse fails
+               if (ntHeader == null) {
+                    Msg.error(this, "Unable to retrieve NTHeader from PE", null);
+                    return -1l;
+                }
+                OptionalHeader optionalHeader = ntHeader.getOptionalHeader();
+                retval = optionalHeader.getImageBase();
+            }catch(RuntimeException ex) {
+            	Msg.error(this, ex.getMessage());
+            } catch (IOException e) {
+				// TODO Auto-generated catch block
+            	Msg.error(this, e.getMessage());
+
+				e.printStackTrace();
+			}
+            return retval;
+        }
+        protected void rebase(long offset) {
+        	Msg.info(this, "do rebase");
+        	Address base_addr = this.addr(offset);
+        	int t = program.startTransaction("rebase");
+
+        	try {
+				program.setImageBase(base_addr, false);
+			} catch (AddressOverflowException | LockException | IllegalStateException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+        	program.endTransaction(t, true);
+        	
+        }
         protected void dumpArtifacts() {
             program = getProgram();
             String target_root = System.getenv("target_root");
@@ -1160,6 +1225,7 @@ public class RESimUtilsPlugin extends Plugin {
             String ida_analysis = System.getenv("IDA_ANALYSIS");
             if(ida_analysis == null){
                 Msg.error(this, "ida_analysis not defined");
+                return;
             }
             String target_image_path = program.getExecutablePath();
             String relative = null;
@@ -1168,7 +1234,18 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.debug(this,"relative "+relative);
             }else{
                 Msg.error(this,"target image path "+target_image_path+" does not start with root "+target_root);
+                return;
             }
+            long orig_base = 0;
+            try {
+            	orig_base = ElfLoader.getElfOriginalImageBase(program);
+            }catch(NullPointerException ex) {
+            	Msg.info(this,  "Not elf, try pe");
+            	orig_base = getCoffOriginalImageBase();
+            }
+            long current_base = program.getImageBase().getOffset();
+            rebase(orig_base);
+            Msg.info(this,  "orig image base "+orig_base+" current base "+current_base);
             File root_file = new File(target_root);
             String base_name = root_file.getName();
             File analysis_file = new File(ida_analysis+File.separator+base_name+relative);
@@ -1177,10 +1254,12 @@ public class RESimUtilsPlugin extends Plugin {
             parent_file.mkdirs();
             String outfuns = ida_analysis+File.separator+base_name+relative+".funs";
             String outblocks = ida_analysis+File.separator+base_name+relative+".blocks";
+            long delta = current_base - orig_base;
             dumpFunctions(outfuns);
             dumpBlocks(outblocks);
             String outexternals = ida_analysis+File.separator+base_name+relative+".imports";
             dumpExternals(outexternals);
+            rebase(current_base);
 
         }
         protected void dumpFunctions(String outpath){
@@ -1242,29 +1321,31 @@ public class RESimUtilsPlugin extends Plugin {
 
             FunctionManager fm = program.getFunctionManager();
             SymbolTable st = program.getSymbolTable();
+            String fun_addr = null;
             for(Function f : fm.getExternalFunctions()){
-                AddressIterator x = f.getBody().getAddresses(true);
-                for(Address ax : x) {
-                	long val = ax.getOffset();
-                	Msg.info(this,  "addr val "+val);
-                }
-                //Address addr = f.getEntryPoint();
-                //ExternalLocation loc = f.getExternalLocation();
-                //Address addr = loc.getAddress();
-                //String fun_addr = String.valueOf(addr.getOffset());
+
                 String fname = f.getName();
-                Symbol s = st.getExternalSymbol(fname);
-                Address addr = s.getAddress();
-                String fun_addr = String.valueOf(addr.getOffset());
-                Msg.info(this,  "external sym addr is "+fun_addr+" name "+fname);
-                /*
-                DemangledObject demo = DemanglerUtil.demangle(f.getName());
+                String sig = f.getSignature().getPrototypeString();
+                String ret_type = f.getSignature().getReturnType().getDisplayName();
+                sig = sig.substring(ret_type.length()).trim();
+                Msg.info(this,  "sig "+sig+" ret type "+ ret_type);
+                // thanks dev747368!
+                Address[] ex_link = NavigationUtils.getExternalLinkageAddresses(program, f.getEntryPoint());
+                for(Address ax : ex_link) {
+                	long val = ax.getOffset();
+                	//Msg.info(this,  "link addr val "+val);
+                    fun_addr = String.valueOf(ax.getOffset());
+                }             
+                
+                DemangledObject demo = DemanglerUtil.demangle(program, sig);
                 if(demo != null) {
-                    fname = demo.getDemangledName();
-                    Msg.info(this,  "demangled to "+fname);
+                    sig = demo.getName();
+                    Msg.info(this,  "demangled to "+sig);
+                }else {
+                	//Msg.info(this, "no demangle for "+fname);
                 }
-                */
-                thefuns.addProperty(fun_addr, fname);
+                
+                thefuns.addProperty(fun_addr, sig);
             }
             gson.toJson(thefuns, jsonWriter);
             try {
