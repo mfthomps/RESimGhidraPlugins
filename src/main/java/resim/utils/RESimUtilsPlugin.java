@@ -1220,11 +1220,15 @@ public class RESimUtilsPlugin extends Plugin {
             String target_root = System.getenv("target_root");
             if(target_root == null){
                 Msg.error(this, "target_root not defined");
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing TARGET_ROOT env variable.  Start Ghidra using runGhidra.sh from application root directory.",
+                        "Missing TARGET_ROOT path", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             String ida_analysis = System.getenv("IDA_ANALYSIS");
             if(ida_analysis == null){
                 Msg.error(this, "ida_analysis not defined");
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing IDA_ANALYSIS env variable.  Start Ghidra using runGhidra.sh from application root directory.",
+                        "Missing IDA_ANALYSIS path", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             String target_image_path = program.getExecutablePath();
@@ -1234,6 +1238,8 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.debug(this,"relative "+relative);
             }else{
                 Msg.error(this,"target image path "+target_image_path+" does not start with root "+target_root);
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "target image path "+target_image_path+" does not start with root "+target_root,
+                        "Missing TARGET_ROOT path", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             long orig_base = 0;
@@ -1328,7 +1334,7 @@ public class RESimUtilsPlugin extends Plugin {
                 String sig = f.getSignature().getPrototypeString();
                 String ret_type = f.getSignature().getReturnType().getDisplayName();
                 sig = sig.substring(ret_type.length()).trim();
-                Msg.info(this,  "sig "+sig+" ret type "+ ret_type);
+                //Msg.info(this,  "sig "+sig+" ret type "+ ret_type);
                 // thanks dev747368!
                 Address[] ex_link = NavigationUtils.getExternalLinkageAddresses(program, f.getEntryPoint());
                 for(Address ax : ex_link) {
@@ -1336,7 +1342,7 @@ public class RESimUtilsPlugin extends Plugin {
                 	//Msg.info(this,  "link addr val "+val);
                     fun_addr = String.valueOf(ax.getOffset());
                 }             
-                
+                // tbd names are demangled already, remove this?
                 DemangledObject demo = DemanglerUtil.demangle(program, sig);
                 if(demo != null) {
                     sig = demo.getName();
