@@ -51,6 +51,8 @@ The hover plugin included herein is largely separable from other plugs.  It disp
 when the mouse hovers over operands.   Ghidra now includes a native hover function for displaying register values.
 
 ## Development
-If you are developing the plugin with Eclipse, you can test the plugin within the Ghidra repo environment
-by creating a link from the repo's Ghidra/Extensions to the RESimGhidraPlugins repo.  This lets you test using class files
-instead of the jar's, and does not require reinstalling the plugin and restarting Ghidra.
+To develop the plugin in Eclipse, you will need the GhidraDev Eclipse plugin.  See the Ghidra repo's README.  Once
+that is installed in Eclipse, use GhidraDev / New / Ghidra Module Project to create a new project.  Uncheck all of the
+Ghidra module templates.  After the project is created, right click on src/main/java and import the RESimGhidraPlugin
+source from src/main/java/resim.  Use Import / General File System.  Be sure to click the "Advanced" button and direct
+Eclipse to use links rather than copying files from the repo.
