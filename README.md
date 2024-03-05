@@ -23,7 +23,9 @@ See the README in the forked gdb repo for information on building gdb.
 The plugin can be installed using the github release at
 https://github.com/mfthomps/RESimGhidraPlugins/releases/latest
 Download the RESimGhidraPlugins.tar and expand it into your 
-GHIDRA\_INSTALL\_DIR/Extensions directory.
+GHIDRA\_INSTALL\_DIR/../Extensions directory. NOTE Ghidra has
+two extensions directory.  Expand the plugin tar into the one
+within the top level directory.
 
 Alternately, clone the RESimGhidraPlugins repo 
 run the ./buildRESimExtension.sh script to build and install the extension.
