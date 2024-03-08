@@ -7,7 +7,7 @@ See https://github.com/mfthomps/RESim
 are replicated here, it is not entirely complete and not fully tested.
 
 ## Install Ghidra from its repo
-These plugins have been tested with Ghidra release 11.0.
+These plugins have been tested with Ghidra release 11.0.1.
 Get that Release from \url{https://github.com/NationalSecurityAgency/ghidra}.
 Unzip the release zip into a directory and set an GHIDRA\_INSTALL\_DIR environment variable to that,
 and set it in your .bashrc.
