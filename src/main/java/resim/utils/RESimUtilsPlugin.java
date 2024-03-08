@@ -37,8 +37,10 @@ import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.file.formats.android.bootldr.AndroidBootLoaderAnalyzer;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.event.*;
+import ghidra.app.plugin.core.debug.gui.action.PCByRegisterLocationTrackingSpec;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
 import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
+import ghidra.app.services.DebuggerListingService;
 import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.plugin.core.colorizer.*;
@@ -1135,6 +1137,7 @@ public class RESimUtilsPlugin extends Plugin {
                     // before ghidra debugger settles out.
                     doRest();
                     doMapping();
+                    tool.getService(DebuggerListingService.class).setTrackingSpec(PCByRegisterLocationTrackingSpec.INSTANCE);
                 }
             //}else if(event instanceof TraceRecorderAdvancedPluginEvent) {
             //    Msg.debug(this,  "is trace advanced event");
@@ -1158,7 +1161,6 @@ public class RESimUtilsPlugin extends Plugin {
             // There are also getCurreentTrace(), etc., if you want just the one thing
             DebuggerCoordinates current = traceManager.getCurrent();
             Msg.debug(this, "refreshRegisters got current");
-
             // Now, we need to get the relevant recorder
             TraceRecorder recorder = modelService.getRecorder(current.getTrace());
             if(recorder == null) {
@@ -1184,6 +1186,7 @@ public class RESimUtilsPlugin extends Plugin {
                 }
                 Msg.debug(this, "refreshRegisters all done");
             }
+
         }
         public boolean connected() {
            if(impl != null) {

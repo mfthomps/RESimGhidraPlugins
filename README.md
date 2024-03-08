@@ -49,9 +49,6 @@ Use the RESim / Configure menu options to set the path to your customized gdb; t
 the file system root of the target binary, the host:port of your Simics host, and to set the ARM architecture if needed.
 See the RESim-UsersGuide.pdf for additional information on using the Ghidra plugin with RESim.
 
-NOTE: The Ghidra API's have changed and broken some of the UI refresh.  When the debugger is connected to the server,
-go to the Dynamic trace window and select "Track Program Counter (by Register" from the arrow icon popup.
-
 ## Ghidra Debugger hover plugin
 The hover plugin included herein is largely separable from other plugs.  It displays reference addresses and values
 when the mouse hovers over operands.   Ghidra now includes a native hover function for displaying register values.
