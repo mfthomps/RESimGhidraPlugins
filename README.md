@@ -12,6 +12,10 @@ Get that Release from \url{https://github.com/NationalSecurityAgency/ghidra}.
 Unzip the release zip into a directory and set an GHIDRA\_INSTALL\_DIR environment variable to that,
 and set it in your .bashrc.
 
+NOTE: The Ghidra API's have changed and broken some of the UI refresh.  Thus, after selecting a new watch mar
+or reversing execution, you must select the "Stack" item from the Ghidra debugger "Objects" pane and click the
+refresh button.
+
 ## Install fork of gdb
 Use of the Ghidra plugin requires a modified version of gdb, available at
 \url{https://github.com/mfthomps/binutils-gdb}.  The modification causes
