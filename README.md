@@ -12,9 +12,6 @@ Get that Release from \url{https://github.com/NationalSecurityAgency/ghidra}.
 Unzip the release zip into a directory and set an GHIDRA\_INSTALL\_DIR environment variable to that,
 and set it in your .bashrc.
 
-NOTE: The Ghidra API's have changed and broken some of the UI refresh.  Thus, after selecting a new watch mar
-or reversing execution, you must select the "Stack" item from the Ghidra debugger "Objects" pane and click the
-refresh button.
 
 ## Install fork of gdb
 Use of the Ghidra plugin requires a modified version of gdb, available at
@@ -51,6 +48,9 @@ in the windows, use the Window / Debugger menu to select the RESim windows (the 
 Use the RESim / Configure menu options to set the path to your customized gdb; the path to 
 the file system root of the target binary, the host:port of your Simics host, and to set the ARM architecture if needed.
 See the RESim-UsersGuide.pdf for additional information on using the Ghidra plugin with RESim.
+
+NOTE: The Ghidra API's have changed and broken some of the UI refresh.  When the debugger is connected to the server,
+go to the Dynamic trace window and select "Track Program Counter (by Register" from the arrow icon popup.
 
 ## Ghidra Debugger hover plugin
 The hover plugin included herein is largely separable from other plugs.  It displays reference addresses and values
