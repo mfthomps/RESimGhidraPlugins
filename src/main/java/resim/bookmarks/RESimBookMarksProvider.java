@@ -66,7 +66,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         MSG("Message", String.class, RESimBookMarksRow::getMsg),
         INSTRUCT("Instruction", String.class, RESimBookMarksRow::getInstruct),
         FUNCTION("Function", String.class, RESimBookMarksRow::getFunction),
-        PID("pid", Long.class, RESimBookMarksRow::getPid);
+        TID("tid", String.class, RESimBookMarksRow::getTid);
 
         private final String header;
         private final Function<RESimBookMarksRow, ?> getter;
@@ -392,21 +392,23 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         bookMarksTableModel.clear();
     }
     public void add(RESimBookMarksRow row) {
+    	Msg.debug(this, "in other add");
         bookMarksTableModel.add(row);
     }
 
     public void add(HashMap<Object, Object> entry, int index){
+    	Msg.debug(this,  "add entered");
         String mark = (String) entry.get("mark");
         String msg = (String) entry.get("msg");
         String instruct = (String) entry.get("instruct");
         String fun = (String) entry.get("fun");
         long ip = (long) entry.get("ip");
         Address ip_addr = resimUtils.addr(ip);
-        long cycle = (long) entry.get("rel_cycle");
-        long pid = (long) entry.get("pid");
- //     public RESimBookMarksRow(RESimBookMarksProvider provider, int index, String mark, Address pc, long cycle, long pid, String instruct, String msg) {
+        long cycle = (long) entry.get("cycle");
+        String tid = (String) entry.get("tid");
 
-         RESimBookMarksRow wmr = new RESimBookMarksRow(this, index, mark, ip_addr, cycle, pid, instruct, fun, msg);
+         RESimBookMarksRow wmr = new RESimBookMarksRow(this, index, mark, ip_addr, cycle, tid, instruct, fun, msg);
+         Msg.debug(this,  "adding wmr mark "+mark);
          add(wmr); 
     }
     @SuppressWarnings("unchecked")
@@ -435,8 +437,10 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             java.util.List<Object> bookMarks = (java.util.ArrayList<Object>) watch_json;
             int index = 1;
             for(Object o : bookMarks){
+            	Msg.debug(this,  "got entry");
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
                 add(entry, index);
+                Msg.debug(this,  "back from add");
                 index++;
             }
             actionRefresh.setEnabled(true);

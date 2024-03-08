@@ -26,12 +26,15 @@ import org.apache.commons.io.FilenameUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import ghidra.app.nav.NavigationUtils;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.debug.api.tracemgr.DebuggerCoordinates;
+import ghidra.file.formats.android.bootldr.AndroidBootLoaderAnalyzer;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.event.*;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
@@ -52,6 +55,7 @@ import ghidra.program.model.address.AddressRangeImpl;
 import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsProvider;
 import ghidra.app.plugin.core.debug.service.modules.DebuggerStaticMappingUtils;
 import ghidra.dbg.DebuggerObjectModel;
+import ghidra.dbg.target.TargetObject;
 import ghidra.dbg.target.TargetRegisterBank;
 import ghidra.dbg.DebuggerObjectModel.RefreshBehavior;
 
@@ -249,8 +253,24 @@ public class RESimUtilsPlugin extends Plugin {
                     //dbo = getDebuggerObjectsProvider();
                     dbo = (DebuggerObjectsProvider) tool.getComponentProvider("Objects");
                     dbo.refresh("Threads");
-                    dbo.getTraceManager().getCurrent();
+                    TargetObject result = null;
+
+                    CompletableFuture <TargetObject> thread_obj = (CompletableFuture<TargetObject>) object_model.fetchModelValue("Inferiors[1].Threads");
+                    try {
+                        result = thread_obj.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        // TODO Auto-generated catch block
+                        Msg.error(this,  getExceptString(e));
+                    }
+                    DebuggerCoordinates dbc = dbo.getTraceManager().getCurrent();
                     Msg.debug(this, "refreshClient did refresh of debugger");
+                    //TargetObject threads = (TargetObject) ((DebuggerObjectModel) tool).fetchModelValue("Inferiors[1].Thread");
+                    Map <String, TargetObject> dog = (Map<String, TargetObject>) result.getCachedElements();
+                    TargetObject gdbthread = (TargetObject) dog.values().toArray()[0];                    
+                    TargetObject stack = (TargetObject) gdbthread.fetchChild("Stack");
+                    stack.resync();
+                    //fetthreads.refreshSubtree(threads);
+                    
                 } catch (Exception e) {
                     Msg.error(this,  getExceptString(e));
                 }
@@ -414,6 +434,7 @@ public class RESimUtilsPlugin extends Plugin {
 
             Long start = 0L;
             Long end = 0L;
+            Long offset = 0L;
             Program current_program = getProgram();
             String target_path = current_program.getExecutablePath();
             String target_base = (String) FilenameUtils.getName(target_path);
@@ -424,11 +445,13 @@ public class RESimUtilsPlugin extends Plugin {
             if(target_base.equals(prog_base)){
                 String pid_o = (String) somap.get("group_leader");
                 Msg.debug(this,"addModule, is main prog, pid_o is "+pid_o);
+                offset = (Long) somap.get("offset");
+                //start = (Long) somap.get("prog_start") + offset;
                 start = (Long) somap.get("prog_start");
                 end = (Long) somap.get("prog_end");
                 module_path = prog_path;
             }else{
-                Msg.debug(this,"addModule program is not main, search libs for target_base "+target_base);
+                Msg.debug(this,"addModule program is not main, search libs for target_base "+target_base+" num sectoins"+sections.size());
                 String lib_path = null;
                 for(Object o : sections) {
                     java.util.HashMap<Object, Object> section = (java.util.HashMap<Object, Object>) o;
@@ -437,7 +460,8 @@ public class RESimUtilsPlugin extends Plugin {
                         lib_path = (String) section.get("file");
                     } 
                     String lib_base = (String) FilenameUtils.getName(lib_path);
-                    if(target_base.equals(lib_base)){
+                    Msg.debug(this,  "check path "+lib_path);
+                    if(target_base.startsWith(lib_base) || lib_base.startsWith(target_base)){
                         Msg.debug(this,"addModule found lib that matches prog at "+lib_path);
                         
                         start = (Long) section.get("locate");
@@ -473,7 +497,8 @@ public class RESimUtilsPlugin extends Plugin {
             AddressSpace dynRam = current_trace.getBaseAddressFactory().getDefaultAddressSpace();
             AddressSpace statRam = current_program.getAddressFactory().getDefaultAddressSpace();
             Long length = end - start;
-
+                      
+            
             Msg.debug(this,  "start transaction");
             try (Transaction tid =
                     currentTrace.openTransaction("Update Module")) {
@@ -481,19 +506,23 @@ public class RESimUtilsPlugin extends Plugin {
                 try {
                     //progmod = tm.getLoadedModuleByPath(snap, module_path);
 
-                    Collection<? extends TraceModule> module_collection = tm.getModulesByPath(module_path);
+                    //Collection<? extends TraceModule> module_collection = tm.getModulesByPath(module_path);
+                    //Collection<? extends TraceModule> module_collection = tm.getLoadedModules(snap);
+                    Collection<? extends TraceModule> module_collection = tm.getAllModules();
+                    Msg.debug(this,  "from loaded modules, got "+module_collection.size());
                     progmod = module_collection.iterator().next();
+                    Msg.debug(this,  "got module"+ progmod.getName()+" targetbase "+target_base);
+
                     if(progmod == null){
                         Msg.debug(this,  "Failed to find existing module at path "+module_path+" base "+module_base+" count "+module_collection.size()+". Add new module.");
                         progmod = tm.addModule(module_path, target_base, ar, Lifespan.nowOn(0));
                     }else{
                         progmod.setRange(ar);
                     }
-
-
+                 
                     TraceLocation from = new DefaultTraceLocation(current_trace, null, Lifespan.nowOn(0), dynRam.getAddress(start));
                     ProgramLocation to = new ProgramLocation(current_program, statRam.getAddress(start));
-                    DebuggerStaticMappingUtils.addMapping(from, to, length, false);
+                    DebuggerStaticMappingUtils.addMapping(from, to, length, true);
                     /*
                     mappings.addMapping(
                         new DefaultTraceLocation(current_trace, null, Lifespan.nowOn(0),
@@ -513,6 +542,7 @@ public class RESimUtilsPlugin extends Plugin {
             String path = null;
             String name = null;
             for(Object o : sections) {
+
                 java.util.HashMap<Object, Object> section = (java.util.HashMap<Object, Object>) o;
                 start = (Long) section.get("locate");
                 end = (Long) section.get("end");
@@ -627,6 +657,29 @@ public class RESimUtilsPlugin extends Plugin {
             }
             return retval;
         }
+        String writeGDBMapping64Macro() {
+            String retval = null;
+            String tmpdir = System.getProperty("java.io.tmpdir");
+            System.out.println("Temp file path: " + tmpdir);
+            List<String> content = Arrays.asList("define info proc mappings",
+            		"echo 0x0 0x7FFFFFFFFFFFFFFF 0x8000000000000000 0x0 lomem \n",
+            		"echo 0x8000000000000000 0xFFFFFFFFFFFFFFFF 0x8000000000000000 0x0 himem",
+                    "end");
+                   
+            try {
+
+                // Create an temporary file
+                Path temp = Files.createTempFile("64bit", ".mapping");
+                System.out.println("Temp file : " + temp);
+                
+                Files.write(temp,  content, StandardOpenOption.CREATE);
+                retval = temp.toString();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return retval;
+        }
         public CompletableFuture<? extends GdbModelImpl> build() {
             /**
              * Create a GdbModelImpl and provide it with a gdb command line.
@@ -663,11 +716,13 @@ public class RESimUtilsPlugin extends Plugin {
             }
 
             Program p = getProgram();
+            //String ex = p.get
             String path = p.getExecutablePath();
             Msg.debug(this,  "from getProgram, got "+path);
             String target = Preferences.getProperty(RESIM_TARGET_ARCH);
             Msg.debug(this,  "build, target is "+target);
-            String mapinfo = writeGDBMappingMacro();
+            String mapinfo = writeGDBMapping64Macro();
+            //String mapinfo = writeGDBMappingMacro();
 
             String arch_info = "";
             if(target != null){
@@ -715,7 +770,7 @@ public class RESimUtilsPlugin extends Plugin {
             CompletableFuture<? extends GdbModelImpl> future = build();
             return future.thenApply(model ->{
                 GdbManagerImpl new_impl = null;
-                Msg.debug(this,  "createDebug, thenApply");
+                Msg.debug(this,  "createDebug,  thenApply");
                 DebuggerModelService service = tool.getService(DebuggerModelService.class);
                 service.addModel(model);
 

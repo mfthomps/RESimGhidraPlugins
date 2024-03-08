@@ -27,12 +27,12 @@ public class RESimBookMarksRow {
     private int index;
     Address pc;
     long cycle;
-    long pid;
+    String tid;
     String mark;
     String fun;
     String instruct;
 
-    public RESimBookMarksRow(RESimBookMarksProvider provider, int index, String mark, Address pc, long cycle, long pid, String instruct, String fun, String msg) {
+    public RESimBookMarksRow(RESimBookMarksProvider provider, int index, String mark, Address pc, long cycle, String tid, String instruct, String fun, String msg) {
         this.provider = provider;
         this.msg = msg;
         this.pc = pc;
@@ -40,7 +40,7 @@ public class RESimBookMarksRow {
         this.index = index;
         this.mark = mark;
         this.cycle = cycle;
-        this.pid = pid;
+        this.tid = tid;
         this.instruct = instruct;
 
     }
@@ -70,8 +70,8 @@ public class RESimBookMarksRow {
     public long getCycle() {
         return cycle;
     }   
-    public long getPid() {
-        return pid;
+    public String getTid() {
+        return tid;
     }
 
 
