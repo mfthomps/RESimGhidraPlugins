@@ -70,7 +70,12 @@ import ghidra.program.model.mem.MemoryBlockException;
 import ghidra.program.model.mem.MemoryConflictException;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
+import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.InstructionIterator;
+import ghidra.program.model.listing.Listing;
 import ghidra.program.model.symbol.ExternalLocation;
+import ghidra.program.model.symbol.Reference;
+import ghidra.program.model.symbol.ReferenceIterator;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolTable;
 import ghidra.util.Msg;
@@ -702,7 +707,7 @@ public class RESimUtilsPlugin extends Plugin {
                         "Missing gdb executable", JOptionPane.ERROR_MESSAGE);
                 return null;
             }
-            String fsrootpath = Preferences.getProperty(RESIM_GDB_PATH);
+            String fsrootpath = Preferences.getProperty(RESIM_FSROOT_PATH);
             if(fsrootpath == null) {
                 Msg.error(this,  "Missing file system root path configuration value");
                 JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing fs root path, use RESim / Configure menu.",
@@ -1275,7 +1280,9 @@ public class RESimUtilsPlugin extends Plugin {
         }
         protected void dumpArtifacts() {
             program = getProgram();
-            String target_root = System.getenv("target_root");
+            //String target_root = System.getenv("target_root");
+            String target_root = Preferences.getProperty(RESIM_FSROOT_PATH);
+
             if(target_root == null){
                 Msg.error(this, "target_root not defined");
                 JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing TARGET_ROOT env variable.  Start Ghidra using runGhidra.sh from application root directory.",
@@ -1283,6 +1290,7 @@ public class RESimUtilsPlugin extends Plugin {
                 return;
             }
             String ida_analysis = System.getenv("IDA_ANALYSIS");
+            //String ida_analysis = "/tmp/myanalysis";
             if(ida_analysis == null){
                 Msg.error(this, "ida_analysis not defined");
                 JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "Missing IDA_ANALYSIS env variable.  Start Ghidra using runGhidra.sh from application root directory.",
@@ -1323,11 +1331,16 @@ public class RESimUtilsPlugin extends Plugin {
             dumpBlocks(outblocks);
             String outexternals = ida_analysis+File.separator+base_name+relative+".imports";
             dumpExternals(outexternals);
+            String outxrefs = ida_analysis+File.separator+base_name+relative+".arm_blr";
+            dumpArmBlrXrefs(outxrefs);
             rebase(current_base);
 
         }
         protected void dumpFunctions(String outpath){
             program = getProgram();
+            String architecture = program.getLanguage().getProcessor().toString();
+            Msg.info(this, "architecture is "+architecture);
+
             File outputFile = new File(outpath);
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -1339,7 +1352,6 @@ public class RESimUtilsPlugin extends Plugin {
                 e.printStackTrace();
             }
             JsonObject thefuns = new JsonObject();
-
             FunctionManager fm = program.getFunctionManager();
             for(Function f : fm.getFunctions(true)){
                 Address min = f.getBody().getMinAddress();
@@ -1354,9 +1366,13 @@ public class RESimUtilsPlugin extends Plugin {
                     Msg.info(this,  "demangled to "+fname);
                 }
                 */
+                int adjust = adjustStack(f, architecture);
+                	
+
                 function.addProperty("name",fname);
                 function.addProperty("start", min.getOffset());
                 function.addProperty("end", max.getOffset());
+                function.addProperty("adjust_sp",  adjust);
                 String fun_addr = String.valueOf(min.getOffset());
                 thefuns.add(fun_addr, function);
             }
@@ -1369,11 +1385,93 @@ public class RESimUtilsPlugin extends Plugin {
             }
             Msg.info(this, "Json of functions written to "+outpath);
         }
+        protected boolean isArm(String arch) {
+        	if(arch.equals("AARCH64") || arch.equals("ARM")) {
+        		return true;
+        	}else {
+        		return false;
+        	}
+        }
+        protected int getValue(String token) {
+        	int retval = 0;
+        	token = token.strip();
+        	if(token.startsWith("#")) {
+        		token = token.substring(1);
+        	}
+        	retval = Integer.decode(token);
+        	return retval;
+        }
+        protected int adjustStack(Function fun, String architecture) {
+        	int adjust = 0;
+            program = getProgram();
+            AddressIterator iter = fun.getBody().getAddresses(false);
+            int max_look = 10;
+            int counter = 0;
+            boolean got_ret = false;
+            for(Address inst_addr : iter) {
+            	Instruction instruct = program.getListing().getInstructionAt(inst_addr);
+            	if(instruct == null) {
+            		continue;
+            	}
+            	String s = instruct.getMnemonicString().toLowerCase();
+            	//Msg.info(this,  "addr "+inst_addr+" instruct string "+s);
+
+            	if(got_ret == false){
+            		if(!s.equals("ret")) {
+            			continue;
+            		}else {
+            			//Msg.info(this,  "got ret");
+            			got_ret = true;
+            		}
+            	}
+            	if(s.startsWith("add")) {
+            	    String op0 = instruct.getDefaultOperandRepresentation(0).toLowerCase();
+            	    if(op0.equals("sp")) {
+            	    	if(isArm(architecture)) {
+                    	    String op2_s = instruct.getDefaultOperandRepresentation(2).toLowerCase();
+                    	    int op2 = getValue(op2_s);
+                    	    adjust = adjust + op2;
+            	    	}else {
+                    	    String op1_s = instruct.getDefaultOperandRepresentation(1).toLowerCase();
+                    	    int op1 = getValue(op1_s);
+                    	    adjust = adjust + op1;
+            	    		
+            	    	}
+            	    }
+
+            	}else if(isArm(architecture) && s.startsWith("l")){
+            		String addr_op = null;
+            		if(s.startsWith("ldp")) {
+            			addr_op = instruct.getDefaultOperandRepresentation(2).toLowerCase();
+            		}else {
+            			addr_op = instruct.getDefaultOperandRepresentation(1).toLowerCase();
+            		}
+            		//Msg.info(this,  "addr op is "+addr_op);
+            		if(addr_op.contains("],")) {
+            			int index = addr_op.indexOf("],")+2;
+            			String rest = addr_op.substring(index);
+            			//Msg.info(this,  "value string is "+rest);
+            			int this_adjust = getValue(rest);
+            			//Msg.info(this,  "value value is"+this_adjust);
+            			adjust = adjust + this_adjust;
+            			break;
+            		}
+            	}
+            	
+            	
+            	
+            	
+            	counter = counter+1;
+            	if(counter > max_look) {
+            		break;
+            	}
+            }
+            return adjust;
+        }
         protected void dumpExternals(String outpath){
             program = getProgram();
             File outputFile = new File(outpath);
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
             JsonWriter jsonWriter = null;
             try {
                 jsonWriter = new JsonWriter(new FileWriter(outputFile));
@@ -1382,23 +1480,22 @@ public class RESimUtilsPlugin extends Plugin {
                 e.printStackTrace();
             }
             JsonObject thefuns = new JsonObject();
-
             FunctionManager fm = program.getFunctionManager();
-            SymbolTable st = program.getSymbolTable();
             String fun_addr = null;
             for(Function f : fm.getExternalFunctions()){
-
-                String fname = f.getName();
                 String sig = f.getSignature().getPrototypeString();
                 String ret_type = f.getSignature().getReturnType().getDisplayName();
+                String fname = f.getName();
                 sig = sig.substring(ret_type.length()).trim();
+                
                 //Msg.info(this,  "sig "+sig+" ret type "+ ret_type);
                 // thanks dev747368!
                 Address[] ex_link = NavigationUtils.getExternalLinkageAddresses(program, f.getEntryPoint());
                 for(Address ax : ex_link) {
-                	long val = ax.getOffset();
                 	//Msg.info(this,  "link addr val "+val);
                     fun_addr = String.valueOf(ax.getOffset());
+                    Msg.info(this,  "fun "+fname+" link addr "+ax);
+                   
                 }             
                 // tbd names are demangled already, remove this?
                 DemangledObject demo = DemanglerUtil.demangle(program, sig);
@@ -1410,6 +1507,7 @@ public class RESimUtilsPlugin extends Plugin {
                 }
                 
                 thefuns.addProperty(fun_addr, sig);
+                
             }
             gson.toJson(thefuns, jsonWriter);
             try {
@@ -1418,7 +1516,80 @@ public class RESimUtilsPlugin extends Plugin {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            Msg.info(this, "Json of functions written to "+outpath);
+            Msg.info(this, "Json of imports written to "+outpath);
+        }
+        protected void dumpArmBlrXrefs(String outpath) {
+            program = getProgram();
+            File outputFile = new File(outpath);
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonWriter jsonWriter = null;
+            try {
+                jsonWriter = new JsonWriter(new FileWriter(outputFile));
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            JsonObject arm_blr = new JsonObject();
+            FunctionManager fm = program.getFunctionManager();
+            SymbolTable st = program.getSymbolTable();
+            for(Function f : fm.getExternalFunctions()){
+                String sig = f.getSignature().getPrototypeString();
+                String ret_type = f.getSignature().getReturnType().getDisplayName();
+                String fname = f.getName();
+                sig = sig.substring(ret_type.length()).trim();
+                
+                //Msg.info(this,  "sig "+sig+" ret type "+ ret_type);
+                // thanks dev747368!
+                Address[] ex_link = NavigationUtils.getExternalLinkageAddresses(program, f.getEntryPoint());
+                for(Address ax : ex_link) {
+                	//Msg.info(this,  "link addr val "+val);
+                    //Msg.info(this,  "fun "+fname+" link addr "+ax);
+                   
+                    
+                    ReferenceIterator references = program.getReferenceManager().getReferencesTo(ax);
+                    while(references.hasNext()) {
+                    	Reference reference = references.next();
+                    	Address from = reference.getFromAddress();
+                    	//Msg.info(this, "ref addr from "+from);
+                    	long next_pc = from.getOffset()+4;
+                    	Instruction instruct = program.getListing().getInstructionAt(addr(next_pc));
+                    	if(instruct == null) {
+                    		continue;
+                    	}
+                    	String s = instruct.getMnemonicString().toLowerCase();
+                    	//Msg.info(this, "ref instruct "+s);
+                    	int counter = 0;
+                    	while(!(s.startsWith("blr") || s.startsWith("br"))){
+                    		next_pc = next_pc+4;
+                    		counter = counter + 1;
+                    		if(counter > 10) {
+                    			break;
+                    		}
+                        	instruct = program.getListing().getInstructionAt(addr(next_pc));
+                        	if(instruct != null) {
+                                s = instruct.getMnemonicString().toLowerCase();                    				                        		
+                            	//Msg.info(this, "next_pc instruct "+s);
+                        	}
+
+                    	}
+                    	//Msg.info(this, "after break s is "+s);
+                        if(s.startsWith("blr") || s.startsWith("br")) {
+                        	arm_blr.addProperty(String.valueOf(next_pc), fname);
+                        }
+                    }
+
+                }             
+
+                
+            }
+            gson.toJson(arm_blr, jsonWriter);
+            try {
+                jsonWriter.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            Msg.info(this, "Json of arm blr xrefs written to "+outpath);
         }
         protected void dumpBlocks(String outpath){
             program = getProgram();
