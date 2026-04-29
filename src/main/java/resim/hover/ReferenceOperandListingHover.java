@@ -20,17 +20,13 @@ import java.util.concurrent.ExecutionException;
 
 import javax.swing.JComponent;
 
-import agent.gdb.manager.impl.GdbManagerImpl;
-import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
-import agent.gdb.model.impl.GdbModelImpl;
+
 import docking.widgets.fieldpanel.field.Field;
 import docking.widgets.fieldpanel.support.FieldLocation;
 import ghidra.GhidraOptions;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
-import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
-import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
+
 import ghidra.app.plugin.core.hover.AbstractConfigurableHover;
-import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
@@ -42,6 +38,7 @@ import ghidra.trace.model.Trace;
 import ghidra.util.HTMLUtilities;
 import ghidra.util.Msg;
 import resim.libs.RESimLibs;
+import resim.utils.RESimUtilsPlugin;
 
 public class ReferenceOperandListingHover extends AbstractConfigurableHover 
 		implements ListingHoverService {
@@ -51,41 +48,11 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 	private static final String DESCRIPTION =
 		"Display content of referenced memory.";
 	private Trace currentTrace;
-	private GdbManagerImpl impl;
+	private RESimUtilsPlugin utilsPlugin = null;
 	public ReferenceOperandListingHover(PluginTool tool) {
 		super(tool, PRIORITY);
 	}
-    /**
-     * Get the instance of the GDBManagerImpl using tool.getService 
-     * @return The instance.
-     */
-    public GdbManagerImpl getGdbManager() throws Exception {
-        GdbManagerImpl retval=null;
-        if(this.impl == null) {
-            DebuggerObjectsPlugin objects = 
-                (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
-            DebuggerModelService models = objects.modelService;
-            GdbModelImpl model = models.getModels()
-                .stream()
-                .filter(GdbModelImpl.class::isInstance)
-                .map(GdbModelImpl.class::cast)
-                .findFirst()
-                .orElse(null);
-            if (model == null) {
-                Msg.info(this, "Failed to get GdbManager, model is null");
-                return null;
-            }
-            java.lang.reflect.Field f = GdbModelImpl.class.getDeclaredField("gdb");
-            f.setAccessible(true);
-            this.impl = (GdbManagerImpl) f.get(model);
-            if(this.impl == null) {
-                Msg.info(this, "Failed to get GdbManager");
-            }
-        }
-        retval = impl;
-        
-        return retval;
-    }
+
     public Trace getCurrentTrace() {
         DebuggerTraceManagerService traces =
                 tool.getService(DebuggerTraceManagerService.class);
@@ -111,28 +78,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
         }
         return currentTrace;
     }
-    public CompletableFuture<String> doGdbCmd(String full_cmd) {
-        /**
-         * Send a command to the GDB console.
-         * @param cmd Command to execute
-         * @return The response from GDB
-         */
-        if(impl == null) {
-            try {
-                impl = getGdbManager();
-                Msg.debug(this,  "doGdbCmd set impl");
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                Msg.error(this,  "doGdbCmd failed to get gdb manager");
-                e.printStackTrace();
-            }
-            if(impl == null) {
-                Msg.error(this,  "doGdbCmd: Failed to get gdb manager");
-                return null;
-            }
-        }
-        return impl.consoleCapture(full_cmd, CompletesWithRunning.CANNOT);
-    }
+
 	@Override
 	protected String getName() {
 		return NAME;
@@ -151,7 +97,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 	@Override
 	public JComponent getHoverComponent(Program program, ProgramLocation programLocation,
 			FieldLocation fieldLocation, Field field) {
-
+          
 		if (!enabled || programLocation == null) {
 			return null;
 		}
@@ -159,7 +105,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 		if (!(programLocation instanceof OperandFieldLocation)) {
 			return null;
 		}
-
+                Msg.debug(this, "getHoverComponent ok?");
 		Address a = programLocation.getAddress();
 		Instruction instruction = program.getListing().getInstructionAt(a);
 		if (instruction == null) {
@@ -170,17 +116,26 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 		    return null;
 		}
 		OperandFieldLocation operandLocation = (OperandFieldLocation) programLocation;
-		Address memReference  = RESimLibs.getMemReference(this, tool, operandLocation, instruction);
+		Msg.debug(this,  "hover, programLocation is "+operandLocation.toString());
+                if(utilsPlugin == null){
+                    utilsPlugin = RESimUtilsPlugin.getRESimUtils(tool);
+                }
+		Address memReference  = utilsPlugin.getMemReference(operandLocation, instruction);
 		if (memReference == null) {
 			return null;
 		}
+		
 		String cmd = "x "+memReference.getOffset();
-		Msg.debug(this,  "gdb cmd is "+cmd);
-		CompletableFuture<String> gdbret = doGdbCmd(cmd);
+		Msg.debug(this,  "hover, gdb cmd is "+cmd);
+		if(utilsPlugin == null) {
+		    utilsPlugin = RESimUtilsPlugin.getRESimUtils(tool);
+		}
+		CompletableFuture<String> gdbret = utilsPlugin.doSimics(cmd);
 
 		if(gdbret == null) {
 		    return null;
 		}
+		
 		String rval = null;
 		try {
             rval = gdbret.get();
@@ -192,6 +147,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 		String formatted =
 			formatString(instruction.getProgram(), rval);
 		Msg.debug(this, "hovering memReference "+memReference.toString());
+	
 		return createTooltipComponent(formatted);
 	}
 	protected String formatString(Program program, String value) {

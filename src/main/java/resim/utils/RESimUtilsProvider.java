@@ -478,7 +478,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     public JComponent getComponent() {
         return component;
     }
-
+/*
     @Override
     public void requestFocus() {
         KeyboardFocusManager kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager();
@@ -491,7 +491,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
 
         component.requestFocus();
     }
-
+*/
     public void setCurrentProgram(Program program) {
         currentProgram = program;
     }

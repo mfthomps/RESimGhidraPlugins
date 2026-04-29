@@ -167,7 +167,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             Msg.debug(this,  "Add bookmark is "+cmd);
             resimUtils.doRESim(cmd).thenApply(stuff ->{
                 Msg.debug(this,  "resim said "+stuff);
-                resimUtils.addMessage(stuff);
+                resimUtils.addMessage((String) stuff);
                 refresh();
                 return stuff;
             });
@@ -209,7 +209,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     @AutoServiceConsumed
     private DebuggerTraceManagerService traceManager;
     // @AutoServiceConsumed  by method
-    private DebuggerModelService modelService;
+    //private DebuggerModelService modelService;
     // @AutoServiceConsumed via method
     DebuggerStaticMappingService mappingService;
     @AutoServiceConsumed
@@ -356,7 +356,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
 
     protected String computeSubTitle() {
         TraceThread curThread = current.getThread();
-        return curThread == null ? "" : curThread.getName();
+        return curThread == null ? "" : curThread.getName(0);
     }
 
     protected void updateSubTitle() {
@@ -376,12 +376,12 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     }
 
 
-
+/*
     @AutoServiceConsumed
     public void setModelService(DebuggerModelService modelService) {
         this.modelService = modelService;
     }
-
+*/
     @AutoServiceConsumed
     private void setMappingService(DebuggerStaticMappingService mappingService) {
 

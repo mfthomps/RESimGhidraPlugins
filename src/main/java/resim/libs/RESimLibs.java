@@ -18,6 +18,7 @@ import ghidra.program.model.scalar.Scalar;
 import ghidra.program.util.OperandFieldLocation;
 import ghidra.trace.model.Trace;
 import ghidra.util.Msg;
+import resim.utils.RESimUtilsPlugin;
 
 public class RESimLibs {
     public static Trace getCurrentTrace(Object src, PluginTool tool) {
@@ -56,7 +57,7 @@ public class RESimLibs {
         Address retval = null;
         int opIndex = loc.getOperandIndex();
         Object[] operands = instruction.getOpObjects(opIndex);
-        Msg.debug(src,  "opIndex is "+opIndex+" len of operands "+operands.length);
+        Msg.debug(src,  "getMemReference opIndex is "+opIndex+" len of operands "+operands.length);
         if (operands.length == 0) {
             //return operands[0];
             Msg.debug(src,  "op len is 0");
@@ -83,9 +84,9 @@ public class RESimLibs {
         boolean domul = false;
         long preval = 0;
         for(Object o : list){
-            Msg.debug(src,  "type: "+o.getClass()+" "+o.toString());        
+            Msg.debug(src,  "getMemReference type: "+o.getClass()+" "+o.toString());        
           
-            Msg.debug(src, "preval "+preval+" sum "+sum);
+            Msg.debug(src, "getMemReference preval "+preval+" sum "+sum);
             if(!in_brackets){
                 if(o instanceof Character){
                     if((Character) o == '['){

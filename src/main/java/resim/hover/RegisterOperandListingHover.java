@@ -23,20 +23,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.swing.JComponent;
 
-import agent.gdb.manager.impl.GdbManagerImpl;
-import agent.gdb.manager.impl.cmd.GdbConsoleExecCommand.CompletesWithRunning;
-import agent.gdb.model.impl.GdbModelImpl;
 import docking.widgets.fieldpanel.field.Field;
 import docking.widgets.fieldpanel.support.FieldLocation;
 import ghidra.GhidraOptions;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
-import ghidra.app.plugin.core.debug.gui.objects.DebuggerObjectsPlugin;
-import ghidra.app.plugin.core.debug.gui.objects.ObjectUpdateService;
 import ghidra.app.plugin.core.debug.gui.register.DebuggerRegistersProvider;
 import ghidra.app.plugin.core.debug.gui.register.RegisterRow;
 import ghidra.app.plugin.core.hover.AbstractConfigurableHover;
-import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
@@ -49,62 +43,31 @@ import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.Trace;
 import ghidra.util.HTMLUtilities;
 import ghidra.util.Msg;
+import resim.utils.RESimUtilsPlugin;
 
-public class RegisterOperandListingHover extends AbstractConfigurableHover 
-		implements ListingHoverService {
+public class RegisterOperandListingHover extends AbstractConfigurableHover implements ListingHoverService {
 
-	private static final int PRIORITY = 22;
-	private static final String NAME = "Register Operand Display";
-	private static final String DESCRIPTION =
-		"Display content of register.";
-	private DebuggerRegistersProvider registerProvider = null;
-	private Trace currentTrace;
-	private GdbManagerImpl impl;
-	public RegisterOperandListingHover(PluginTool tool) {
-		super(tool, PRIORITY);
-	}
-    /**
-     * Get the instance of the GDBManagerImpl using tool.getService
-     * @return The instance.
-     */
-    public GdbManagerImpl getGdbManager() throws Exception {
-        GdbManagerImpl retval=null;
-        if(this.impl == null) {
-            DebuggerObjectsPlugin objects = 
-                (DebuggerObjectsPlugin) tool.getService(ObjectUpdateService.class);
-            DebuggerModelService models = objects.modelService;
-            GdbModelImpl model = models.getModels()
-                .stream()
-                .filter(GdbModelImpl.class::isInstance)
-                .map(GdbModelImpl.class::cast)
-                .findFirst()
-                .orElse(null);
-            if (model == null) {
-                Msg.info(this, "Failed to get GdbManager, model is null");
-                return null;
-            }
-            java.lang.reflect.Field f = GdbModelImpl.class.getDeclaredField("gdb");
-            f.setAccessible(true);
-            this.impl = (GdbManagerImpl) f.get(model);
-            if(this.impl == null) {
-                Msg.info(this, "Failed to get GdbManager");
-            }
-        }
-        retval = impl;
-        
-        return retval;
+    private static final int PRIORITY = 100;
+    private static final String NAME = "Register Operand Display";
+    private static final String DESCRIPTION = "Display content of register.";
+    private DebuggerRegistersProvider registerProvider = null;
+    private Trace currentTrace;
+    private RESimUtilsPlugin utilsPlugin = null;
+
+    public RegisterOperandListingHover(PluginTool tool) {
+        super(tool, PRIORITY);
     }
+
     public Trace getCurrentTrace() {
-        DebuggerTraceManagerService traces =
-                tool.getService(DebuggerTraceManagerService.class);
-        if(traces == null) {
+        DebuggerTraceManagerService traces = tool.getService(DebuggerTraceManagerService.class);
+        if (traces == null) {
             return null;
         }
         int failcount = 0;
-        while(currentTrace == null){
+        while (currentTrace == null) {
             currentTrace = traces.getCurrentTrace();
-            if(currentTrace == null){
-                Msg.debug(this,"no current trace, wait a sec");
+            if (currentTrace == null) {
+                Msg.debug(this, "no current trace, wait a sec");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -112,82 +75,72 @@ public class RegisterOperandListingHover extends AbstractConfigurableHover
                     e.printStackTrace();
                 }
                 failcount++;
-                if(failcount > 10){
+                if (failcount > 10) {
                     return null;
                 }
             }
         }
         return currentTrace;
     }
-    public CompletableFuture<String> doGdbCmd(String full_cmd) {
-        /**
-         * Send a command to the GDB console.
-         * @param cmd Command to execute
-         * @return The response from GDB
-         */
-        if(impl == null) {
-            try {
-                impl = getGdbManager();
-                Msg.debug(this,  "doGdbCmd set impl");
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                Msg.error(this,  "doGdbCmd failed to get gdb manager");
-                e.printStackTrace();
-            }
-        }
-        return impl.consoleCapture(full_cmd, CompletesWithRunning.CANNOT);
+
+    @Override
+    protected String getName() {
+        return NAME;
     }
-	@Override
-	protected String getName() {
-		return NAME;
-	}
 
-	@Override
-	protected String getDescription() {
-		return DESCRIPTION;
-	}
+    @Override
+    protected String getDescription() {
+        return DESCRIPTION;
+    }
 
-	@Override
-	protected String getOptionsCategory() {
-		return GhidraOptions.CATEGORY_BROWSER_POPUPS;
-	}
+    @Override
+    protected String getOptionsCategory() {
+        return GhidraOptions.CATEGORY_BROWSER_POPUPS;
+    }
 
-	@Override
-	public JComponent getHoverComponent(Program program, ProgramLocation programLocation,
-			FieldLocation fieldLocation, Field field) {
-	    Msg.debug(this,  "getHoverComponent");
-		if (!enabled || programLocation == null) {
-			return null;
-		}
+    @Override
+    public JComponent getHoverComponent(Program program, ProgramLocation programLocation, FieldLocation fieldLocation,
+            Field field) {
+        Msg.debug(this, "getHoverComponent");
+        if (!enabled || programLocation == null) {
+            return null;
+        }
 
-		if (!(programLocation instanceof OperandFieldLocation)) {
-			return null;
-		}
+        if (!(programLocation instanceof OperandFieldLocation)) {
+            return null;
+        }
 
-		Address a = programLocation.getAddress();
-		Instruction instruction = program.getListing().getInstructionAt(a);
-		if (instruction == null) {
-			return null;
-		}
-		currentTrace = getCurrentTrace();
-		if(currentTrace == null) {
-		    return null;
-		}
+        Address a = programLocation.getAddress();
+        Instruction instruction = program.getListing().getInstructionAt(a);
+        if (instruction == null) {
+            return null;
+        }
+        currentTrace = getCurrentTrace();
+        if (currentTrace == null) {
+            return null;
+        }
 
-		OperandFieldLocation operandLocation = (OperandFieldLocation) programLocation;
-		Register reg = getRegister(operandLocation, instruction);
-		if(reg != null) {
-    		Msg.debug(this,"Register is "+reg.getName());
-    		Long regval = getRegValue(reg);
-    		
-    		String disp = reg.getName()+" : "+Long.toHexString(regval);
-    		String formatted =
-    			formatString(instruction.getProgram(), disp);
-    		return createTooltipComponent(formatted);
-		}else {
-		    return null;
-		}
-	}
+        OperandFieldLocation operandLocation = (OperandFieldLocation) programLocation;
+        Register reg = getRegister(operandLocation, instruction);
+        if (reg != null) {
+            Msg.debug(this, "Register is " + reg.getName());
+            if(utilsPlugin == null) {
+	        utilsPlugin = RESimUtilsPlugin.getRESimUtils(tool);
+	    }
+            Long regval = utilsPlugin.getRegValue(reg.getName());
+            if(regval != null){
+                String disp = reg.getName() + " : " + Long.toHexString(regval);
+                String formatted = formatString(instruction.getProgram(), disp);
+                return createTooltipComponent(formatted);
+            }else{
+                Msg.debug(this, "Got null from getRegValue for "+reg.toString());
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
     protected String formatString(Program program, String value) {
         StringBuilder sb = new StringBuilder(HTMLUtilities.HTML);
         sb.append("<hr>");
@@ -197,42 +150,48 @@ public class RegisterOperandListingHover extends AbstractConfigurableHover
 
         return sb.toString();
     }
+
     protected Register getRegister(OperandFieldLocation loc, Instruction instruction) {
-        
-        registerProvider = (DebuggerRegistersProvider) tool.getComponentProvider(DebuggerResources.TITLE_PROVIDER_REGISTERS);
+
+        registerProvider = (DebuggerRegistersProvider) tool
+                .getComponentProvider(DebuggerResources.TITLE_PROVIDER_REGISTERS);
 
         int opIndex = loc.getOperandIndex();
         Object[] operands = instruction.getOpObjects(opIndex);
         Register reg = null;
         if (operands.length == 1) {
-            if(operands[0] instanceof Register) {
+            if (operands[0] instanceof Register) {
                 reg = (Register) operands[0];
             }
-        }else {
+        } else {
             InstructionPrototype prototype = instruction.getPrototype();
-            List<Object> list =
-                prototype.getOpRepresentationList(opIndex, instruction.getInstructionContext());
+            List<Object> list = prototype.getOpRepresentationList(opIndex, instruction.getInstructionContext());
             if (list == null) {
                 return null;
             }
             int subIndex = loc.getSubOperandIndex();
             Object subob = list.get(subIndex);
-            if(subob instanceof Register) {
+            if (subob instanceof Register) {
                 reg = (Register) subob;
             }
         }
         return reg;
     }
-	protected Long getRegValue(Register reg) {
-	    Long retval = null;
 
-		if(reg != null) {
-            RegisterRow row = registerProvider.getRegisterRow(reg);       
-            BigInteger regval = row.getValue();  
-            retval = regval.longValue();
-		}
+    protected Long getRegValue(Register reg) {
+        Long retval = null;
+
+        if (reg != null) {
+            RegisterRow row = registerProvider.getRegisterRow(reg);
+            if(row != null){
+                BigInteger regval = row.getValue();
+                retval = regval.longValue();
+            }else{
+                Msg.debug(this, "getRegValue row null for reg "+reg.toString());
+            }
+        }
         return retval;
 
-	}
+    }
 
 }

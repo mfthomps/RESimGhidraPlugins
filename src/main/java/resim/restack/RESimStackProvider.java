@@ -54,7 +54,6 @@ import ghidra.trace.model.*;
 import ghidra.trace.model.stack.TraceStack;
 import ghidra.trace.model.stack.TraceStackFrame;
 import ghidra.trace.model.thread.TraceThread;
-import ghidra.trace.util.TraceAddressSpace;
 import ghidra.trace.util.TraceRegisterUtils;
 import ghidra.util.Msg;
 import ghidra.util.Swing;
@@ -191,7 +190,6 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
     @AutoServiceConsumed
     private DebuggerTraceManagerService traceManager;
     // @AutoServiceConsumed  by method
-    private DebuggerModelService modelService;
     // @AutoServiceConsumed via method
     DebuggerStaticMappingService mappingService;
     @AutoServiceConsumed
@@ -338,7 +336,7 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
 
     protected String computeSubTitle() {
         TraceThread curThread = current.getThread();
-        return curThread == null ? "" : curThread.getName();
+        return curThread == null ? "" : curThread.getName(0);
     }
 
     protected void updateSubTitle() {
@@ -355,10 +353,6 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         updateSubTitle();
     }
 
-    @AutoServiceConsumed
-    public void setModelService(DebuggerModelService modelService) {
-        this.modelService = modelService;
-    }
 
     @AutoServiceConsumed
     private void setMappingService(DebuggerStaticMappingService mappingService) {

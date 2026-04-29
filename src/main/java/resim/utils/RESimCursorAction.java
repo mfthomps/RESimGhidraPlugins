@@ -99,7 +99,7 @@ public class RESimCursorAction extends ListingContextAction {
                 Instruction instruction = context.getProgram().getListing().getInstructionAt(a);
                 try{
                     OperandFieldLocation operandLocation = (OperandFieldLocation) loc;
-                    entry = RESimLibs.getMemReference(this, plugin.getTool(), operandLocation, instruction);
+                    entry = plugin.getMemReference(operandLocation, instruction);
                 }catch(java.lang.ClassCastException ex){
                 }
             }

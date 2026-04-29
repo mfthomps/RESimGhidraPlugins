@@ -42,7 +42,6 @@ import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.DebuggerListingService;
-import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.services.DebuggerTraceManagerService;
 import ghidra.app.services.MarkerService;
@@ -179,7 +178,6 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
     @AutoServiceConsumed
     private DebuggerTraceManagerService traceManager;
     // @AutoServiceConsumed  by method
-    private DebuggerModelService modelService;
     // @AutoServiceConsumed via method
     DebuggerStaticMappingService mappingService;
     @AutoServiceConsumed
@@ -217,6 +215,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         buildMainPanel();
 
         setDefaultWindowPosition(WindowPosition.BOTTOM);
+        Msg.debug(this,"watchmarks call createActions");      
         createActions();
 
         setVisible(true);
@@ -320,7 +319,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
 
     protected String computeSubTitle() {
         TraceThread curThread = current.getThread();
-        return curThread == null ? "" : curThread.getName();
+        return curThread == null ? "" : curThread.getName(0);
     }
 
     protected void updateSubTitle() {
@@ -339,10 +338,6 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         updateSubTitle();
     }
 
-    @AutoServiceConsumed
-    public void setModelService(DebuggerModelService modelService) {
-        this.modelService = modelService;
-    }
 
     @AutoServiceConsumed
     private void setMappingService(DebuggerStaticMappingService mappingService) {
@@ -354,6 +349,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         watchMarksTableModel.clear();
     }
     public void add(RESimWatchMarksRow row) {
+    	Msg.debug(this, "watchmarks in add");
         watchMarksTableModel.add(row);
     }
     public void add(HashMap<Object, Object> entry, int index){
@@ -365,13 +361,12 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         if(i > 0){
             msg = msg.substring(0, i);
         }
-        Msg.debug(this, "add msg is "+msg);
         long ip = (long) entry.get("ip");
         Address ip_addr = resimUtils.addr(ip);
         long cycle = (long) entry.get("cycle");
         String tid = (String) entry.get("tid");
-         RESimWatchMarksRow wmr = new RESimWatchMarksRow(this, index, msg, ip_addr, cycle, tid);
-         add(wmr); 
+        RESimWatchMarksRow wmr = new RESimWatchMarksRow(this, index, msg, ip_addr, cycle, tid);
+        add(wmr); 
     }
     @SuppressWarnings("unchecked")
     public void refresh(){
@@ -395,11 +390,13 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
                 Msg.error(this, "Failed to get watchMarks json from RESim");
                 return null;
             }
-       
+            Msg.debug(this, "watch_string is"+watch_string);
             Object watch_json = Json.getJson(watch_string);
             java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
             int index = 1;
+            Msg.debug(this,  "len of watchmarks is "+watchMarks.size());
             for(Object o : watchMarks){
+            	Msg.debug(this,  "doing watchmark for entry");
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
                 add(entry, index);
                 index++;

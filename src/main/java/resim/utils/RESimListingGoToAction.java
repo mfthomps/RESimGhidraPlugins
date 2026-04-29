@@ -24,7 +24,6 @@ import docking.widgets.OptionDialog;
 import ghidra.app.context.ListingActionContext;
 import ghidra.app.context.ListingContextAction;
 import ghidra.app.services.DebuggerListingService;
-import ghidra.app.services.DebuggerModelService;
 import ghidra.app.services.GoToService;
 import ghidra.framework.cmd.BackgroundCommand;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
@@ -74,7 +73,7 @@ public class RESimListingGoToAction extends ListingContextAction {
         Address a = loc.getAddress();
         Instruction instruction = context.getProgram().getListing().getInstructionAt(a);
         OperandFieldLocation operandLocation = (OperandFieldLocation) loc;
-        Address memref = RESimLibs.getMemReference(this, plugin.getTool(), operandLocation, instruction);
+        Address memref = plugin.getMemReference(operandLocation, instruction);
         if(memref != null) {
             GoToService gotoService = plugin.getTool().getService(GoToService.class);
 
