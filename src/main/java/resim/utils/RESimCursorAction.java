@@ -89,13 +89,17 @@ public class RESimCursorAction extends ListingContextAction {
      */
     @Override
     public void actionPerformed(ListingActionContext context) {
-        Msg.debug(this, "actionPeformed");
+        Msg.debug(this, "actionPeformedX");
         Address entry = null;
         AddressSetView body = null;
         if(!line){
+            Msg.debug(this, "actionPeformed line false");
             ProgramLocation loc = context.getLocation();
+            Msg.debug(this, "actionPeformed loc "+loc.toString());
             Address a = loc.getAddress();
+            Msg.debug(this, "actionPeformed addres "+a);
             if(a != null){
+                entry = a;
                 Instruction instruction = context.getProgram().getListing().getInstructionAt(a);
                 try{
                     OperandFieldLocation operandLocation = (OperandFieldLocation) loc;
@@ -104,11 +108,13 @@ public class RESimCursorAction extends ListingContextAction {
                 }
             }
         }else{
+            Msg.debug(this, "actionPeformed line true");
             if (context.hasSelection()) {
                 body = context.getSelection();
                 entry = body.getMinAddress();
             }
             else {
+                Msg.debug(this, "actionPeformed no selection context is "+context.toString());
                 entry = context.getAddress();
             }
         } 

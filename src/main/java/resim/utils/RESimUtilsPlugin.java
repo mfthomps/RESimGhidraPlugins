@@ -981,8 +981,8 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.debug(this, "check against "+register.getName());
                 if(register.getName().equals(reg)){
                     Msg.debug(this, "getRegValue found for reg "+reg);
-                    retval = reg_value.getSignedValueIgnoreMask().longValue();
-                
+                    retval = reg_value.getUnsignedValue().longValue();
+                    break;
                 }
             }
         }else{
@@ -1824,18 +1824,22 @@ public class RESimUtilsPlugin extends Plugin {
                         found_brackets = true;
                         break;
                     }
+                    Msg.debug(this, "getMemReference is character "+o+" sum now "+sum);
                 }else if(o instanceof Register){
                     Register r = (Register) o;
                     //RegisterRow row = registerProvider.getRegisterRow(r);
                     //BigInteger regval = row.getValue();
                     preval = getRegValue(r.getName());
+                    Msg.debug(this, "getMemReference o is register "+r+" got value "+preval);
                 }else if(o instanceof Scalar){
                     Scalar s = (Scalar) o;
+                    Msg.debug(this, "o is Scalar "+s);
                     if(domul){
                         preval = preval * s.getSignedValue();
                         domul = false;
                         //Msg.debug(src, "did mul, preval now "+preval);
                     }else{
+                        sum = preval;
                         preval = s.getSignedValue();
                     }
                 }else if(o instanceof GenericAddress){
