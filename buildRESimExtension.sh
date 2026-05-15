@@ -7,7 +7,7 @@ if [ -z $GHIDRA_INSTALL_DIR ]; then
     echo "Must define GHIDRA_INSTALL_DIR"
     exit
 fi
-gradle build
+gradle build || exit
 #
 # Copy build classes to bin
 #
