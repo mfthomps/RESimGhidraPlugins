@@ -192,6 +192,9 @@ public class RESimUtilsPlugin extends Plugin {
     private RemoteMethod gdb_registers_refresh_method = null;
     private RemoteMethod gdb_memory_refresh_method = null;
     private List<RegisterValue> latest_register_frame = null;
+    private long load_offset = 0;
+    private long load_size = 0;
+    private String load_string = null;
 
     /**
      * Construct the RESimUtils plugin.
@@ -397,6 +400,7 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.error(this, "gdb_execute_method is null");
             return null;
         }
+        Msg.debug(this, "in doGdbCmd for cmd "+dbg_cmd);
         return CompletableFuture.supplyAsync(() -> {
             RemoteAsyncResult async_result;
             String result = null;
@@ -405,12 +409,15 @@ public class RESimUtilsPlugin extends Plugin {
 
             try {
                 result = (String) async_result.get();
+                Msg.debug(this, "did async_result.get and got len "+result.length());
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                Msg.error(this, getExceptString(e));
+                Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
             } catch (ExecutionException e) {
                 // TODO Auto-generated catch block
-                e.printStackTrace();
+                Msg.error(this, getExceptString(e));
+                Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
             }
             return result;
         });
@@ -797,9 +804,9 @@ public class RESimUtilsPlugin extends Plugin {
         /*
          * Main menu RESim entries
          */
-        new ActionBuilder("my test", getName()).menuPath(MENU_RESIM, "my test")
-                .menuGroup(MENU_RESIM, "Attach").onAction(c -> myTest())
-                .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.SHIFT_DOWN_MASK)).buildAndInstall(tool);
+        //new ActionBuilder("my test", getName()).menuPath(MENU_RESIM, "my test")
+        //        .menuGroup(MENU_RESIM, "Attach").onAction(c -> myTest())
+        //       .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.SHIFT_DOWN_MASK)).buildAndInstall(tool);
         new ActionBuilder("Reverse step into", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-into")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse").onAction(c -> doRESimRefresh("revStepInto()"))
                 .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F8, InputEvent.CTRL_DOWN_MASK)).buildAndInstall(tool);
@@ -809,24 +816,12 @@ public class RESimUtilsPlugin extends Plugin {
         new ActionBuilder("Reverse to text", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&to text")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse").onAction(c -> doRESimRefresh("revToText()"))
                 .buildAndInstall(tool);
-        new ActionBuilder("Define host:port", getName())
-                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define host:port")
-                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "host:port").onAction(c -> setHostPort()).buildAndInstall(tool);
-        new ActionBuilder("Define gdb path", getName())
-                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define gdb path")
-                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "gdb path").onAction(c -> setGdbPath()).buildAndInstall(tool);
-        new ActionBuilder("Define FS root", getName())
-                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Define file system root")
-                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "FS Root").onAction(c -> setFSRootPath()).buildAndInstall(tool);
-        new ActionBuilder("Set target arch", getName())
-                .menuPath(RESimUtilsPlugin.MENU_RESIM, "Configure", "&Set target arch")
-                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "target").onAction(c -> setTargetArch()).buildAndInstall(tool);
         new ActionBuilder("Color blocks", getName()).menuPath(MENU_RESIM, "Color blocks").menuGroup(MENU_RESIM, "color")
                 .onAction(c -> colorBlocks()).buildAndInstall(tool);
         new ActionBuilder("Dump Artifacts", getName()).menuPath(MENU_RESIM, "Dump artifacts")
                 .menuGroup(MENU_RESIM, "artifacts").onAction(c -> dumpArtifacts()).buildAndInstall(tool);
-        new ActionBuilder("Foo Bar", getName()).menuPath(MENU_RESIM, "Foo bar").menuGroup(MENU_RESIM, "Foo")
-                .onAction(c -> fooBar()).buildAndInstall(tool);
+        //new ActionBuilder("Foo Bar", getName()).menuPath(MENU_RESIM, "Foo bar").menuGroup(MENU_RESIM, "Foo")
+        //       .onAction(c -> fooBar()).buildAndInstall(tool);
         new ActionBuilder("About", getName()).menuPath(MENU_RESIM, "about").menuGroup(MENU_RESIM, "about")
                 .onAction(c -> about()).buildAndInstall(tool);
         new ActionBuilder("Resync with server", getName())
@@ -943,7 +938,11 @@ public class RESimUtilsPlugin extends Plugin {
             getCurrentTrace();
             if (connected()) {
                 Msg.debug(this, "is TraceActivatedPluginEvent, refresh client");
+                if(program == null){
+                    program = getProgram();
+                }
                 refreshClient(true);
+                getLoadOffset();
             }
         } else if (event instanceof TraceSelectionPluginEvent) {
             Msg.debug(this, "is traceSelection");
@@ -1658,38 +1657,59 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.error(this, "RESIM_IDA_DATA not defined");
             return;
         }
-        String hitspath = ida_data + File.separator + program.getName() + File.separator + program.getName();
+        String full = program.getExecutablePath();
+        String resim_image = System.getenv("RESIM_IMAGE");
+        if(!full.startsWith(resim_image)){
+            Msg.error(this,  "executable does not start with resim_image");
+        }
+        String less_image = full.substring(resim_image.length());
+        Msg.debug(this, "full executable path is "+full);
+        Msg.debug(this, "less_image is "+less_image);
+        //String hitspath = ida_data + File.separator + program.getName() + File.separator + program.getName();
+        String hitspath = ida_data + File.separator + less_image;
         String latest_hits_file = hitspath + ".hits";
-        String all_hits_file = hitspath + ".all.hits";
-        String pre_hits_file = hitspath + ".pre.hits";
-        Object latest_json = Json.getJsonFromFile(latest_hits_file);
-        if (latest_json == null) {
-            Msg.error(this, "color blocks failed to get json from " + latest_hits_file);
-            return;
+        String afl_hits_file = hitspath + "_afl.hits";
+        File latest_f = new File(latest_hits_file);
+        File afl_f = new File(afl_hits_file);
+        Object latest_json = null;
+        if(latest_f.isFile()){
+            latest_json = Json.getJsonFromFile(latest_hits_file);
+            if (latest_json == null) {
+                Msg.error(this, "color blocks failed to get json from " + latest_hits_file);
+                return;
+            }
+        }else if(afl_f.isFile()){
+            latest_json = Json.getJsonFromFile(afl_hits_file);
+            if (latest_json == null) {
+                Msg.error(this, "color blocks failed to get json from " + latest_hits_file);
+                return;
+            }
         }
         ArrayList<Long> new_bb_list = (ArrayList<Long>) latest_json;
-        Object all_hits_json = Json.getJsonFromFile(all_hits_file);
+        //Object all_hits_json = Json.getJsonFromFile(all_hits_file);
         ArrayList<Long> all_bb_list = null;
-        if (all_hits_json != null) {
-            all_bb_list = (ArrayList<Long>) all_hits_json;
-        } else {
-            all_bb_list = new ArrayList<Long>();
-        }
-        ArrayList<Long> pre_bb_list = null;
-        Object pre_hits_json = Json.getJsonFromFile(all_hits_file);
-        if (pre_hits_json != null) {
-            pre_bb_list = (ArrayList<Long>) pre_hits_json;
-        } else {
-            pre_bb_list = new ArrayList<Long>();
-        }
+        //if (all_hits_json != null) {
+        //    all_bb_list = (ArrayList<Long>) all_hits_json;
+        //} else {
+        all_bb_list = new ArrayList<Long>();
+        //}
+        //ArrayList<Long> pre_bb_list = null;
+        //Object pre_hits_json = Json.getJsonFromFile(all_hits_file);
+        //if (pre_hits_json != null) {
+        //    pre_bb_list = (ArrayList<Long>) pre_hits_json;
+        //} else {
+        //    pre_bb_list = new ArrayList<Long>();
+        //}
 
         BasicBlockModel bbm = new BasicBlockModel(program);
         int id = program.startTransaction("Test - Color Change");
         CodeBlock cb = null;
+        Long adjusted_bb;
         try {
             for (Long bb : new_bb_list) {
+                adjusted_bb = bb + this.load_offset;
                 try {
-                    cb = bbm.getCodeBlockAt(addr(bb), TaskMonitor.DUMMY);
+                    cb = bbm.getCodeBlockAt(addr(adjusted_bb), TaskMonitor.DUMMY);
                 } catch (CancelledException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -1745,7 +1765,7 @@ public class RESimUtilsPlugin extends Plugin {
     }
 
     protected void about() {
-        JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.1d", "RESim version",
+        JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.4", "RESim version",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -1855,5 +1875,25 @@ public class RESimUtilsPlugin extends Plugin {
          
         return retval;
 
+    }
+    void getLoadOffset(){
+        
+        String cmd = "getLoadSize('"+program.getName()+"')";
+        doRESim(cmd).thenApply(return_string ->{
+            if(return_string == null) {
+                Msg.error(this, "Failed to get watchMarks json from RESim");
+                return null;
+            }
+            Msg.debug(this, "return_string is"+return_string);
+            long[] values = Arrays.stream(return_string.replaceAll("[^0-9,]", "").split(","))
+                       .map(String::trim)
+                       .mapToLong(Long::parseLong)
+                       .toArray();
+            this.load_offset = values[0];
+            this.load_size = values[1];
+            Msg.debug(this, "set load_offset to "+Long.toHexString(this.load_offset));
+
+            return return_string;
+        });
     }
 }
