@@ -349,7 +349,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         watchMarksTableModel.clear();
     }
     public void add(RESimWatchMarksRow row) {
-    	Msg.debug(this, "watchmarks in add");
+    	//Msg.debug(this, "watchmarks in add");
         watchMarksTableModel.add(row);
     }
     public void add(HashMap<Object, Object> entry, int index){
@@ -396,7 +396,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
             int index = 1;
             Msg.debug(this,  "len of watchmarks is "+watchMarks.size());
             for(Object o : watchMarks){
-            	Msg.debug(this,  "doing watchmark for entry");
+            	//Msg.debug(this,  "doing watchmark for entry");
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
                 add(entry, index);
                 index++;
