@@ -349,10 +349,11 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         watchMarksTableModel.clear();
     }
     public void add(RESimWatchMarksRow row) {
-    	//Msg.debug(this, "watchmarks in add");
+    	//Msg.debug(this, "watchmarks in add row");
         watchMarksTableModel.add(row);
     }
     public void add(HashMap<Object, Object> entry, int index){
+    	//Msg.debug(this, "watchmarks in add object");
         String msg = ((String) entry.get("msg")).trim();
         if(msg.startsWith("\\t")){
             msg = msg.substring(2);
@@ -390,7 +391,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
                 Msg.error(this, "Failed to get watchMarks json from RESim");
                 return null;
             }
-            Msg.debug(this, "watch_string is"+watch_string);
+            //Msg.debug(this, "watch_string is"+watch_string);
             Object watch_json = Json.getJson(watch_string);
             java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
             int index = 1;
