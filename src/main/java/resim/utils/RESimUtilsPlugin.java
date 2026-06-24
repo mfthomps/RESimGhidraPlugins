@@ -59,7 +59,9 @@ import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.AddressOverflowException;
+import ghidra.program.model.address.AddressRange;
 import ghidra.program.model.address.AddressRangeImpl;
+import ghidra.program.model.address.AddressRangeIterator;
 import ghidra.app.plugin.core.debug.service.modules.DebuggerStaticMappingUtils;
 
 import ghidra.program.model.listing.Program;
@@ -193,7 +195,6 @@ public class RESimUtilsPlugin extends Plugin {
     private RemoteMethod gdb_memory_refresh_method = null;
     private List<RegisterValue> latest_register_frame = null;
     private long load_offset = 0;
-    private long load_size = 0;
     private String load_string = null;
 
     /**
@@ -292,7 +293,14 @@ public class RESimUtilsPlugin extends Plugin {
          * @return Ghidra address
          */
         AddressSpace statRam = program.getAddressFactory().getDefaultAddressSpace();
-        return statRam.getAddress(addr);
+        Address retval = statRam.getAddress(0);
+        String hexOffset = Long.toHexString(addr);
+        try{
+            retval = statRam.getAddress(hexOffset);
+        } catch (Exception e){
+            Msg.debug(this, "error getting address, return zero");
+        }
+        return retval;
     }
 
     public Address addrDyn(long addr) {
@@ -818,6 +826,8 @@ public class RESimUtilsPlugin extends Plugin {
                 .buildAndInstall(tool);
         new ActionBuilder("Color blocks", getName()).menuPath(MENU_RESIM, "Color blocks").menuGroup(MENU_RESIM, "color")
                 .onAction(c -> colorBlocks()).buildAndInstall(tool);
+        new ActionBuilder("Clear blocks", getName()).menuPath(MENU_RESIM, "Clear blocks").menuGroup(MENU_RESIM, "clear")
+                .onAction(c -> clearColorBlocks()).buildAndInstall(tool);
         new ActionBuilder("Dump Artifacts", getName()).menuPath(MENU_RESIM, "Dump artifacts")
                 .menuGroup(MENU_RESIM, "artifacts").onAction(c -> dumpArtifacts()).buildAndInstall(tool);
         //new ActionBuilder("Foo Bar", getName()).menuPath(MENU_RESIM, "Foo bar").menuGroup(MENU_RESIM, "Foo")
@@ -961,6 +971,14 @@ public class RESimUtilsPlugin extends Plugin {
             // }else if(event instanceof TraceRecorderAdvancedPluginEvent) {
             // Msg.debug(this, "is trace advanced event");
             // refreshRegisters();
+        } else if (event instanceof TraceClosedPluginEvent) {
+            Msg.debug(this, "is trace closed event");
+            program = getProgram();
+            didMapping = false;
+            doMapping();
+            tool.getService(DebuggerListingService.class)
+                    .setTrackingSpec(PCByRegisterLocationTrackingSpec.INSTANCE);
+            
 
         } else {
             Msg.debug(this, "plugin event is " + event.getEventName());
@@ -1262,37 +1280,22 @@ public class RESimUtilsPlugin extends Plugin {
 
     protected void dumpArtifacts() {
         program = getProgram();
-        // String target_root = System.getenv("target_root");
-        String target_root = Preferences.getProperty(RESIM_FSROOT_PATH);
-
-        if (target_root == null) {
-            Msg.error(this, "target_root not defined");
-            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(),
-                    "Missing TARGET_ROOT env variable.  Start Ghidra using runGhidra.sh from application root directory.",
-                    "Missing TARGET_ROOT path", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
         String ida_analysis = System.getenv("IDA_ANALYSIS");
         // String ida_analysis = "/tmp/myanalysis";
         if (ida_analysis == null) {
             Msg.error(this, "ida_analysis not defined");
             JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(),
-                    "Missing IDA_ANALYSIS env variable.  Start Ghidra using runGhidra.sh from application root directory.",
+                    "Missing IDA_ANALYSIS env variable",
                     "Missing IDA_ANALYSIS path", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        String target_image_path = program.getExecutablePath();
-        String relative = null;
-        if (target_image_path.startsWith(target_root)) {
-            relative = target_image_path.substring(target_root.length());
-            Msg.debug(this, "relative " + relative);
-        } else {
-            Msg.error(this, "target image path " + target_image_path + " does not start with root " + target_root);
-            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(),
-                    "target image path " + target_image_path + " does not start with root " + target_root,
-                    "Missing TARGET_ROOT path", JOptionPane.ERROR_MESSAGE);
+        String full = program.getExecutablePath();
+        String resim_image = System.getenv("RESIM_IMAGE");
+        if(!full.startsWith(resim_image)){
+            Msg.error(this,  "executable does not start with resim_image");
             return;
         }
+        String less_image = full.substring(resim_image.length());
         long orig_base = 0;
         try {
             orig_base = ElfLoader.getElfOriginalImageBase(program);
@@ -1303,20 +1306,23 @@ public class RESimUtilsPlugin extends Plugin {
         long current_base = program.getImageBase().getOffset();
         rebase(orig_base);
         Msg.info(this, "orig image base " + orig_base + " current base " + current_base);
-        File root_file = new File(target_root);
-        String base_name = root_file.getName();
-        File analysis_file = new File(ida_analysis + File.separator + base_name + relative);
+        File analysis_file = new File(ida_analysis + File.separator + less_image);
+        Msg.info(this, "analysis_file "+analysis_file);
         String analysis_parent = analysis_file.getParent();
         File parent_file = new File(analysis_parent);
         parent_file.mkdirs();
-        String outfuns = ida_analysis + File.separator + base_name + relative + ".funs";
-        String outblocks = ida_analysis + File.separator + base_name + relative + ".blocks";
+        String outfuns = analysis_file + ".funs";
+        //String outfuns = "/tmp/dog.funs";
+        String outblocks = analysis_file + ".blocks";
+        //String outblocks = "/tmp/dog.blocks";
         long delta = current_base - orig_base;
+       
+
         dumpFunctions(outfuns);
         dumpBlocks(outblocks);
-        String outexternals = ida_analysis + File.separator + base_name + relative + ".imports";
+        String outexternals = analysis_file + ".imports";
         dumpExternals(outexternals);
-        String outxrefs = ida_analysis + File.separator + base_name + relative + ".arm_blr";
+        String outxrefs = analysis_file + ".arm_blr";
         dumpArmBlrXrefs(outxrefs);
         rebase(current_base);
 
@@ -1340,8 +1346,18 @@ public class RESimUtilsPlugin extends Plugin {
         JsonObject thefuns = new JsonObject();
         FunctionManager fm = program.getFunctionManager();
         for (Function f : fm.getFunctions(true)) {
-            Address min = f.getBody().getMinAddress();
-            Address max = f.getBody().getMaxAddress();
+            AddressSetView av = f.getBody();   
+            AddressRangeIterator ari = av.getAddressRanges();
+            JsonArray fun_ranges = new JsonArray();
+            for(AddressRange address_range : ari) {
+                JsonObject jrange = new JsonObject();
+                Address min = address_range.getMinAddress();
+                Address max = address_range.getMaxAddress();
+                jrange.addProperty("start", min.getOffset());
+                jrange.addProperty("end", max.getOffset());
+                fun_ranges.add(jrange);
+            }
+
             JsonObject function = new JsonObject();
 
             String fname = f.getName();
@@ -1352,10 +1368,9 @@ public class RESimUtilsPlugin extends Plugin {
             int adjust = adjustStack(f, architecture);
 
             function.addProperty("name", fname);
-            function.addProperty("start", min.getOffset());
-            function.addProperty("end", max.getOffset());
+            function.add("ranges",  fun_ranges);
             function.addProperty("adjust_sp", adjust);
-            String fun_addr = String.valueOf(min.getOffset());
+            String fun_addr = String.valueOf(av.getMinAddress().getOffset());
             thefuns.add(fun_addr, function);
         }
         gson.toJson(thefuns, jsonWriter);
@@ -1586,53 +1601,61 @@ public class RESimUtilsPlugin extends Plugin {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        jsonWriter.setIndent("  ");
         JsonObject theblocks = new JsonObject();
-
         BasicBlockModel bbm = new BasicBlockModel(program);
         FunctionManager fm = program.getFunctionManager();
-        for (Function f : fm.getFunctions(true)) {
-            Address min = f.getBody().getMinAddress();
-            Address max = f.getBody().getMaxAddress();
-            AddressSetView set = new AddressSet(min, max);
-            CodeBlockIterator cbi = null;
-            try {
-                cbi = bbm.getCodeBlocksContaining(set, TaskMonitor.DUMMY);
-            } catch (CancelledException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+        int fun_count = 0;
+        for (Function f : fm.getFunctionsNoStubs(true)) {
+            AddressSetView av = f.getBody();   
             JsonObject function = new JsonObject();
-            function.addProperty("name", min.getOffset());
+            function.addProperty("name", av.getMinAddress().getOffset());
+            AddressRangeIterator ari = av.getAddressRanges();
             JsonArray funblocks = new JsonArray();
-            for (CodeBlock cb : cbi) {
-                Address block_min = cb.getMinAddress();
-                Address block_max = cb.getMaxAddress();
-                JsonObject block = new JsonObject();
-                block.addProperty("start_ea", block_min.getOffset());
-                block.addProperty("end_ea", block_min.getOffset());
-                JsonArray succs_json = new JsonArray();
-                CodeBlockReferenceIterator succs = null;
+            for(AddressRange address_range : ari) {
+        
+                AddressSetView set = new AddressSet(address_range.getMinAddress(), address_range.getMaxAddress());              CodeBlockIterator cbi = null;
                 try {
-                    succs = cb.getDestinations(TaskMonitor.DUMMY);
+                    cbi = bbm.getCodeBlocksContaining(set, TaskMonitor.DUMMY);
                 } catch (CancelledException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
+                    return;
                 }
-                try {
-                    while (succs.hasNext()) {
-                        CodeBlockReference s = succs.next();
-                        succs_json.add(s.getDestinationAddress().getOffset());
+                for (CodeBlock cb : cbi) {
+                    Address block_min = cb.getMinAddress();
+                    Address block_max = cb.getMaxAddress();
+                    JsonObject block = new JsonObject();
+                    block.addProperty("start_ea", block_min.getOffset());
+                    block.addProperty("end_ea", block_max.getOffset());
+                    JsonArray succs_json = new JsonArray();
+                    CodeBlockReferenceIterator succs = null;
+                    try {
+                        succs = cb.getDestinations(TaskMonitor.DUMMY);
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
                     }
-                } catch (CancelledException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    try {
+                        while (succs.hasNext()) {
+                            CodeBlockReference s = succs.next();
+                            succs_json.add(s.getDestinationAddress().getOffset());
+                        }
+                    } catch (CancelledException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    block.add("succs", succs_json);
+                    funblocks.add(block);
                 }
-                block.add("succs", succs_json);
-                funblocks.add(block);
+                if(funblocks.size() > 1) {
+                    function.add("blocks", funblocks);
+                    String fun_addr = String.valueOf( av.getMinAddress().getOffset());
+                    theblocks.add(fun_addr, function);
+                    //Msg.debug(this, "Function "+Long.toHexString(min.getOffset())+" - "+Long.toHexString(max.getOffset())+" num blocks "+funblocks.size());
+                    fun_count++;
+                }
             }
-            function.add("blocks", funblocks);
-            String fun_addr = String.valueOf(min.getOffset());
-            theblocks.add(fun_addr, function);
         }
         gson.toJson(theblocks, jsonWriter);
         try {
@@ -1657,10 +1680,14 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.error(this, "RESIM_IDA_DATA not defined");
             return;
         }
+        if(this.program == null){
+            this.program = getProgram();
+        } 
         String full = program.getExecutablePath();
         String resim_image = System.getenv("RESIM_IMAGE");
         if(!full.startsWith(resim_image)){
             Msg.error(this,  "executable does not start with resim_image");
+            return;
         }
         String less_image = full.substring(resim_image.length());
         Msg.debug(this, "full executable path is "+full);
@@ -1714,6 +1741,10 @@ public class RESimUtilsPlugin extends Plugin {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                     Msg.error(this, "color blocks cancled exception " + e.toString());
+                    return;
+                }
+                if(cb == null){
+                    Msg.error(this, "color blocks cb null for adjusted_bb 0x"+Long.toHexString(adjusted_bb));
                     return;
                 }
                 Color hit_color = old_hit_color;
@@ -1789,6 +1820,13 @@ public class RESimUtilsPlugin extends Plugin {
             doRESimRefresh("revStepInto()");
         } else {
             doRESimRefresh("revStepOver()");
+        }
+    }
+    void step(boolean into) {
+        if (into) {
+            doRESimRefresh("stepInto()");
+        } else {
+            doRESimRefresh("stepOver()");
         }
     }
     public Address addr(PluginTool tool, long offset) {
@@ -1878,10 +1916,10 @@ public class RESimUtilsPlugin extends Plugin {
     }
     void getLoadOffset(){
         
-        String cmd = "getLoadSize('"+program.getName()+"')";
+        String cmd = "getLoadOffset('"+program.getName()+"')";
         doRESim(cmd).thenApply(return_string ->{
             if(return_string == null) {
-                Msg.error(this, "Failed to get watchMarks json from RESim");
+                Msg.error(this, "Failed to get getLoadOffset json from RESim");
                 return null;
             }
             Msg.debug(this, "return_string is"+return_string);
@@ -1890,10 +1928,37 @@ public class RESimUtilsPlugin extends Plugin {
                        .mapToLong(Long::parseLong)
                        .toArray();
             this.load_offset = values[0];
-            this.load_size = values[1];
             Msg.debug(this, "set load_offset to "+Long.toHexString(this.load_offset));
 
             return return_string;
         });
+    }
+    protected void clearColorBlocks() {
+        program = getProgram();
+        BasicBlockModel bbm = new BasicBlockModel(program);
+        FunctionManager fm = program.getFunctionManager();
+        int fun_count = 0;
+        ColorizingService colorizingService = tool.getService(ColorizingService.class);
+        Color clear_color = new Color(0xffffff);
+        int t = program.startTransaction("clear_color");
+        for (Function f : fm.getFunctionsNoStubs(true)) {
+            AddressSetView av = f.getBody();   
+            AddressRangeIterator ari = av.getAddressRanges();
+            for(AddressRange address_range : ari) {
+        
+                AddressSetView set = new AddressSet(address_range.getMinAddress(), address_range.getMaxAddress());              CodeBlockIterator cbi = null;
+                try {
+                    cbi = bbm.getCodeBlocksContaining(set, TaskMonitor.DUMMY);
+                } catch (CancelledException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    return;
+                }
+                for (CodeBlock cb : cbi) {
+                    colorizingService.setBackgroundColor(cb.getMinAddress(), cb.getMaxAddress(), clear_color);
+                }
+            }
+        }
+        program.endTransaction(t, true);
     }
 }
