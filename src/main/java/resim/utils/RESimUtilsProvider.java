@@ -41,6 +41,8 @@ import resim.bookmarks.RESimBookMarksPlugin;
 import resim.utils.RESimResources.AbstractAddAction;
 import resim.utils.RESimResources.AbstractRevStepIntoAction;
 import resim.utils.RESimResources.AbstractRevStepOverAction;
+import resim.utils.RESimResources.AbstractStepIntoAction;
+import resim.utils.RESimResources.AbstractStepOverAction;
 import resources.ResourceManager;
 
 public class RESimUtilsProvider extends ComponentProviderAdapter
@@ -73,11 +75,14 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     private RESimUtilsPlugin resimUtils; 
     private RevStepIntoAction revStepIntoAction;
     private RevStepOverAction revStepOverAction;
+    private StepIntoAction stepIntoAction;
+    private StepOverAction stepOverAction;
     protected class RevStepIntoAction extends AbstractRevStepIntoAction {
         public static final String GROUP = DebuggerResources.GROUP_CONTROL;
 
         public RevStepIntoAction(RESimUtilsPlugin resimUtils) {
             super(resimUtils);
+            Msg.debug(this, "RevStepIntoAction call setToolBarData");
             setToolBarData(new ToolBarData(ICON, GROUP, "4"));
             addLocalAction(this);
             setEnabled(false);
@@ -85,7 +90,8 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
 
         @Override
         public void actionPerformed(ActionContext context) {
-            resimUtils.revStep(true);
+            Msg.debug(this, "actionPerformed revStepInto");
+            resimUtils.revStep(false);
         }
 
         @Override
@@ -109,6 +115,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
 
         @Override
         public void actionPerformed(ActionContext context) {
+            Msg.debug(this, "actionPerformed revStepOver");
             resimUtils.revStep(false);
         }
 
@@ -121,14 +128,70 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
             return retval;
         }
     }
+    protected class StepIntoAction extends AbstractStepIntoAction {
+        public static final String GROUP = DebuggerResources.GROUP_CONTROL;
+
+        public StepIntoAction(RESimUtilsPlugin resimUtils) {
+            super(resimUtils);
+            Msg.debug(this, "StepIntoAction call setToolBarData");
+            setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+            addLocalAction(this);
+            setEnabled(false);
+        }
+
+        @Override
+        public void actionPerformed(ActionContext context) {
+            Msg.debug(this, "actionPerformed stepInto");
+            resimUtils.step(true);
+        }
+
+        @Override
+        public boolean isEnabledForContext(ActionContext context) {
+            boolean retval = false;
+            if(resimUtils != null) {
+                retval = resimUtils.connected();
+            }       
+            return retval;
+        }
+    }
+    protected class StepOverAction extends AbstractStepOverAction {
+        public static final String GROUP = DebuggerResources.GROUP_CONTROL;
+
+        public StepOverAction(RESimUtilsPlugin resimUtils) {
+            super(resimUtils);
+            setToolBarData(new ToolBarData(ICON, GROUP, "4"));
+            addLocalAction(this);
+            setEnabled(false);
+        }
+
+        @Override
+        public void actionPerformed(ActionContext context) {
+            Msg.debug(this, "actionPerformed stepOver");
+            resimUtils.step(false);
+        }
+
+        @Override
+        public boolean isEnabledForContext(ActionContext context) {
+            boolean retval = false;
+            if(resimUtils != null) {
+                retval = resimUtils.connected();
+            }       
+            return retval;
+        }
+    }
     public void initConsole() {
+        Msg.debug(this,"initConsole begin");
         revStepIntoAction.setEnabled(true);
         revStepOverAction.setEnabled(true);
+        stepIntoAction.setEnabled(true);
+        stepOverAction.setEnabled(true);
         addMessage("RESim",  "Connected");
+        Msg.debug(this,"initConsole end");
     }
     public RESimUtilsProvider(RESimUtilsPlugin plugin) {
         //super(tool, "RESim-console", owner);
         super(plugin.getTool(), "WatchMarks", plugin.getName());
+        Msg.debug(this, "RESimUtilsProvider begin");
         resimUtils = plugin;
         // note: the owner has not changed, just the name; remove sometime after version 10
         //ComponentProvider.registerProviderNameOwnerChange(OLD_NAME, owner, NAME, owner);
@@ -142,6 +205,8 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
         createOptions();
         build();
         createActions();
+        initConsole();
+        Msg.debug(this, "RESimUtilsProvider end");
     }
 
     void init() {
@@ -333,6 +398,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
                 clearMessages();
             }
         };
+        Msg.debug(this, "RESimUtilsProvider createActions begin");
         clearAction.setDescription("Clear Console");
         revStepIntoAction = new RevStepIntoAction(resimUtils);
         revStepIntoAction.setKeyBindingData(new KeyBindingData(
@@ -340,7 +406,15 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
         revStepOverAction = new RevStepOverAction(resimUtils);
         revStepOverAction.setKeyBindingData(new KeyBindingData(
                 KeyStroke.getKeyStroke(KeyEvent.VK_F10, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
+
+        stepIntoAction = new StepIntoAction(resimUtils);
+        stepIntoAction.setKeyBindingData(new KeyBindingData(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F11, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
+        stepOverAction = new StepOverAction(resimUtils);
+        stepOverAction.setKeyBindingData(new KeyBindingData(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F12, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
 // ACTIONS - auto generated
+        Msg.debug(this, "RESimUtilsProvider createActions did bindings");
         clearAction.setToolBarData(new ToolBarData(ResourceManager.loadImage(CLEAR_GIF), null));
 
         clearAction.setEnabled(true);
@@ -360,6 +434,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
 
         addLocalAction(scrollAction);
         addLocalAction(clearAction);
+        Msg.debug(this, "RESimUtilsProvider createActions done");
     }
 
     @Override
