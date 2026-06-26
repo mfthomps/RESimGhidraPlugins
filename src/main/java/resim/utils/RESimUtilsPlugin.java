@@ -1796,7 +1796,7 @@ public class RESimUtilsPlugin extends Plugin {
     }
 
     protected void about() {
-        JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.52", "RESim version",
+        JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.5.3 "RESim version",
                 JOptionPane.INFORMATION_MESSAGE);
     }
 
