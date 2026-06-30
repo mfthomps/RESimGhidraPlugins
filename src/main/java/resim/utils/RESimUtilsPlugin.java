@@ -1021,9 +1021,9 @@ public class RESimUtilsPlugin extends Plugin {
         //}
         Msg.debug(this, "call readRegisters");
         List<RegisterValue> value_list = readRegisters(platform, thread, frame, snap, regs);
-        //for (RegisterValue reg_value : value_list) {
-        //        Msg.debug(this, "readCurrentFrame value is "+reg_value);
-        //}
+        for (RegisterValue reg_value : value_list) {
+                Msg.debug(this, "readCurrentFrame value is "+reg_value);
+        }
         Msg.debug(this, "back from readRegisters");
         latest_register_frame = value_list;
         //Msg.debug(this, "doReadCurrentFrame call to readCurrentFrame got "+latest_register_frame.toString());
@@ -1033,12 +1033,14 @@ public class RESimUtilsPlugin extends Plugin {
                         long snap, Collection<Register> registers) {
                 Msg.debug(this, "readRegisters call refreshRegisersIfLive");
                 refreshRegistersIfLive(platform, thread, frame, snap, registers);
+                Msg.debug(this, "readRegisters back from refreshRegisersIfLive");
                 TraceMemorySpace regs =
                         thread.getTrace().getMemoryManager().getMemoryRegisterSpace(thread, frame, false);
                 if (regs == null) {
                         Msg.debug(this, "readRegisters regs is null");
                         return registers.stream().map(RegisterValue::new).collect(Collectors.toList());
                 }
+                Msg.debug(this, "return stuff");
                 return registers.stream().map(r -> regs.getValue(snap, r)).collect(Collectors.toList());
     }
 
@@ -1060,14 +1062,20 @@ public class RESimUtilsPlugin extends Plugin {
     } 
     protected void refreshRegistersIfLive(TracePlatform platform, TraceThread thread, int frame,
                         long snap, Collection<Register> registers) {
+                Msg.debug(this, "refreshRegistersIfLive begin");
                 Trace trace = thread.getTrace();
 
+                Msg.debug(this, "refreshRegistersIfLive got trace");
                 Target target = getTargetService().getTarget(trace);
+                Msg.debug(this, "refreshRegistersIfLive got target "+target);
                 if (target == null || target.getSnap() != snap) {
+                        Msg.debug(this, "refreshRegistersIfLive bail for reasons");
                         return;
                 }
+                Msg.debug(this, "call from target.readRegisters");
                 Set<Register> asSet = registers instanceof Set<Register> s ? s : Set.copyOf(registers);
                 target.readRegisters(platform, thread, frame, asSet);
+                Msg.debug(this, "back from target.readRegisters");
     }
     public CompletableFuture<String> doReadCurrentFrame(DebuggerCoordinates current, boolean forceRefresh) {
         /**
@@ -1316,9 +1324,8 @@ public class RESimUtilsPlugin extends Plugin {
         String outblocks = analysis_file + ".blocks";
         //String outblocks = "/tmp/dog.blocks";
         long delta = current_base - orig_base;
-       
 
-        dumpFunctions(outfuns);
+        dumpFunctions(outfuns, program);
         dumpBlocks(outblocks);
         String outexternals = analysis_file + ".imports";
         dumpExternals(outexternals);
@@ -1328,60 +1335,6 @@ public class RESimUtilsPlugin extends Plugin {
 
     }
 
-    protected void dumpFunctions(String outpath) {
-        program = getProgram();
-        String architecture = program.getLanguage().getProcessor().toString();
-        Msg.info(this, "architecture is " + architecture);
-
-        File outputFile = new File(outpath);
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-        JsonWriter jsonWriter = null;
-        try {
-            jsonWriter = new JsonWriter(new FileWriter(outputFile));
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        JsonObject thefuns = new JsonObject();
-        FunctionManager fm = program.getFunctionManager();
-        for (Function f : fm.getFunctions(true)) {
-            AddressSetView av = f.getBody();   
-            AddressRangeIterator ari = av.getAddressRanges();
-            JsonArray fun_ranges = new JsonArray();
-            for(AddressRange address_range : ari) {
-                JsonObject jrange = new JsonObject();
-                Address min = address_range.getMinAddress();
-                Address max = address_range.getMaxAddress();
-                jrange.addProperty("start", min.getOffset());
-                jrange.addProperty("end", max.getOffset());
-                fun_ranges.add(jrange);
-            }
-
-            JsonObject function = new JsonObject();
-
-            String fname = f.getName();
-            /*
-             * DemangledObject demo = DemanglerUtil.demangle(f.getName()); if(demo != null)
-             * { fname = demo.getDemangledName(); Msg.info(this, "demangled to "+fname); }
-             */
-            int adjust = adjustStack(f, architecture);
-
-            function.addProperty("name", fname);
-            function.add("ranges",  fun_ranges);
-            function.addProperty("adjust_sp", adjust);
-            String fun_addr = String.valueOf(av.getMinAddress().getOffset());
-            thefuns.add(fun_addr, function);
-        }
-        gson.toJson(thefuns, jsonWriter);
-        try {
-            jsonWriter.close();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        Msg.info(this, "Json of functions written to " + outpath);
-    }
 
     protected boolean isArm(String arch) {
         if (arch.equals("AARCH64") || arch.equals("ARM")) {
@@ -1391,15 +1344,83 @@ public class RESimUtilsPlugin extends Plugin {
         }
     }
 
-    protected int getValue(String token) {
-        int retval = 0;
-        token = token.strip();
-        if (token.startsWith("#")) {
-            token = token.substring(1);
+    public static int getValue(String operand) {
+        // Remove all whitespace and convert to lowercase
+        operand = operand.replaceAll("\\s+", "").toLowerCase();
+        
+        // Split into base value and shift parts (e.g., ["#0xa0", "#12"])
+        String[] parts = operand.split(",lsl");
+        
+        // Clean up the base string by removing the '#' marker
+        String baseStr = parts[0].replace("#", "");
+        
+        int value;
+        if (baseStr.startsWith("0x")) {
+            // Parse as base-16 hex value
+            value = Integer.parseInt(baseStr.substring(2), 16);
+        } else {
+            // Parse as base-10 decimal value
+            value = Integer.parseInt(baseStr);
         }
-        retval = Integer.decode(token);
+            
+        // Apply LSL shift if it exists
+        if (parts.length > 1) {
+            String shiftStr = parts[1].replace("#", "");
+            int shift = Integer.parseInt(shiftStr);
+            value <<= shift;
+        }
+        
+        return value;
+    }
+    /**
+      * If this function looks like an ARM wrapper for another function, return the 
+      * function for which it is a wrapper.
+    **/    
+    protected String armWrapper(Function fun,  FunctionManager fm){
+        String retval = null;
+        program = getProgram();
+        AddressIterator iter = fun.getBody().getAddresses(false);
+        int max_look = 10;
+        int counter = 0;
+        boolean got_ret = false;
+        //Msg.info(this, "armWrapper fun "+fun.getName());
+        for (Address inst_addr : iter) {
+            counter = counter+1;
+            if(counter > 25){
+                break; 
+            }
+            Instruction instruct = program.getListing().getInstructionAt(inst_addr);
+            if (instruct == null) {
+                continue;
+            }
+            String s = instruct.getMnemonicString().toLowerCase();
+            if(s.equals("b")){
+                if (instruct.getNumOperands() > 0) {
+                    Object[] opObjects = instruct.getOpObjects(0);
+                    //Msg.info(this, "\tarmWrapper b found num op[Objects "+opObjects.length+" instr "+instruct.toString());
+                    for (Object op : opObjects) {
+                        // Check if the operand object is a constant value (Scalar)
+                        long value = 0;
+                        try{
+                            value = Long.parseLong(op.toString(), 16);
+                        }catch(Exception ex){
+                            continue;
+                        }
+                        //Msg.info(this, "\top value is "+Long.toHexString(value));
+                        Address targetAddr = instruct.getMinAddress().getNewAddress(value);
+                        Function func = fm.getFunctionAt(targetAddr);
+                        if (func != null) {
+                            //Msg.info(this, "\tfunc is "+func.getName());
+                            retval = String.valueOf(targetAddr.getOffset());
+                            break;
+                        }
+                    }
+                }
+            }
+        }   
         return retval;
     }
+
 
     protected int adjustStack(Function fun, String architecture) {
         int adjust = 0;
@@ -1429,8 +1450,13 @@ public class RESimUtilsPlugin extends Plugin {
                 if (op0.equals("sp")) {
                     if (isArm(architecture)) {
                         String op2_s = instruct.getDefaultOperandRepresentation(2).toLowerCase();
-                        int op2 = getValue(op2_s);
-                        adjust = adjust + op2;
+                        try{
+                            int op2 = getValue(op2_s);
+                            adjust = adjust + op2;
+                        } catch (Exception e){
+                            Msg.debug(this, "failed to get value from op2_s "+op2_s+" from addr "+Long.toHexString(inst_addr.getOffset())+" "+instruct.toString());
+                            break; 
+                        }
                     } else {
                         String op1_s = instruct.getDefaultOperandRepresentation(1).toLowerCase();
                         int op1 = getValue(op1_s);
@@ -1451,9 +1477,13 @@ public class RESimUtilsPlugin extends Plugin {
                     int index = addr_op.indexOf("],") + 2;
                     String rest = addr_op.substring(index);
                     // Msg.info(this, "value string is "+rest);
-                    int this_adjust = getValue(rest);
+                    try{
+                        int this_adjust = getValue(rest);
+                        adjust = adjust + this_adjust;
+                    } catch (Exception e){
+                        Msg.error(this, "failed to getValue from "+rest+" from addr "+Long.toHexString(inst_addr.getOffset())+" "+instruct.toString());
+                    }
                     // Msg.info(this, "value value is"+this_adjust);
-                    adjust = adjust + this_adjust;
                     break;
                 }
             }
@@ -1587,6 +1617,65 @@ public class RESimUtilsPlugin extends Plugin {
             e.printStackTrace();
         }
         Msg.info(this, "Json of arm blr xrefs written to " + outpath);
+    }
+
+    protected void dumpFunctions(String outpath, Program for_program) {
+        String architecture = for_program.getLanguage().getProcessor().toString();
+        Msg.info(this, "architecture is " + architecture);
+
+        File outputFile = new File(outpath);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+        JsonWriter jsonWriter = null;
+        try {
+            jsonWriter = new JsonWriter(new FileWriter(outputFile));
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        JsonObject thefuns = new JsonObject();
+        FunctionManager fm = for_program.getFunctionManager();
+        for (Function f : fm.getFunctions(true)) {
+            AddressSetView av = f.getBody();   
+            AddressRangeIterator ari = av.getAddressRanges();
+            JsonArray fun_ranges = new JsonArray();
+            for(AddressRange address_range : ari) {
+                JsonObject jrange = new JsonObject();
+                Address min = address_range.getMinAddress();
+                Address max = address_range.getMaxAddress();
+                jrange.addProperty("start", min.getOffset());
+                jrange.addProperty("end", max.getOffset());
+                fun_ranges.add(jrange);
+            }
+
+            JsonObject function = new JsonObject();
+
+            String fname = f.getName();
+            /*
+             * DemangledObject demo = DemanglerUtil.demangle(f.getName()); if(demo != null)
+             * { fname = demo.getDemangledName(); Msg.info(this, "demangled to "+fname); }
+             */
+            int adjust = adjustStack(f, architecture);
+
+            function.addProperty("name", fname);
+            function.add("ranges",  fun_ranges);
+            function.addProperty("adjust_sp", adjust);
+            String fun_addr = String.valueOf(av.getMinAddress().getOffset());
+            String wrapper_for = armWrapper(f, fm);
+            if(wrapper_for != null){
+                function.addProperty("wrapper_for", wrapper_for);
+                Msg.info(this, "\tfunction "+fun_addr+" is a wrapper for "+wrapper_for);
+            }
+            thefuns.add(fun_addr, function);
+        }
+        gson.toJson(thefuns, jsonWriter);
+        try {
+            jsonWriter.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        Msg.info(this, "Json of functions written to " + outpath);
     }
 
     protected void dumpBlocks(String outpath) {
