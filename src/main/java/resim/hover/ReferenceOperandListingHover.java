@@ -97,7 +97,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 	@Override
 	public JComponent getHoverComponent(Program program, ProgramLocation programLocation,
 			FieldLocation fieldLocation, Field field) {
-          
+                enabled = false;
 		if (!enabled || programLocation == null) {
 			return null;
 		}

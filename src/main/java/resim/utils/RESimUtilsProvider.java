@@ -49,7 +49,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
         implements ConsoleService, OptionsChangeListener {
 
     private static final String OLD_NAME = "ConsolePlugin";
-    private static final String NAME = "Console";
+    private static final String NAME = "RESimConsole";
 
     private static final String CONSOLE_GIF = "images/monitor.png";
     private static final String CLEAR_GIF = "images/erase16.png";
@@ -212,6 +212,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     void init() {
         stderr = new PrintWriter(new ConsoleWriter(this, true));
         stdin = new PrintWriter(new ConsoleWriter(this, false));
+        Msg.debug(this, "RESimUtilsProvider init");
 
         /* call this before build() -- we get our Font here */
         setVisible(true);
@@ -245,9 +246,11 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     private void build() {
 
         textPane = new ConsoleTextPane(tool);
-        textPane.setName("CONSOLE");
+        textPane.setName("RESim CONSOLE");
         textPane.setFont(font);
         textPane.setEditable(false);
+        Msg.debug(this, "RESimUtilsProvider build");
+
         textPane.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {

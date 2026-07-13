@@ -217,7 +217,6 @@ public class RESimUtilsPlugin extends Plugin {
     protected void init() {
         Msg.info(this, "in init");
         provider = new RESimUtilsProvider(this);
-
         createActions();
 
     }
@@ -326,19 +325,19 @@ public class RESimUtilsPlugin extends Plugin {
 
         Trace currentTrace = traceManager.getCurrentTrace();
 
-        // 2. Get the Language object (this defines the registers for the architecture)
+        // Get the Language object (this defines the registers for the architecture)
         Language language = currentTrace.getBaseLanguage();
+        Msg.debug(this, "Langauge is "+language.toString());
+        List<String> baseRegisterNames = null;
+        if(language.toString().equals("x86/little/32/default")){
+            baseRegisterNames = List.of("EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI", "ES", "CS", "SS", "DS", "FS", "GS", "FS_OFFSET", "GS_OFFSET"); 
+        }else{
+            baseRegisterNames = language.getRegisters().stream()
+                .filter(Register::isBaseRegister)
+                .map(Register::getName)
+                .collect(Collectors.toList());
+        }
 
-        // 3. Get all Register names
-        List<String> allNames = language.getRegisterNames();
-
-        // 4. To get specific Register objects (e.g., only base registers)
-        List<String> baseRegisterNames = language.getRegisters().stream()
-            .filter(Register::isBaseRegister)
-            .map(Register::getName)
-            .collect(Collectors.toList());
-
-        Msg.debug(this, "Total Registers: " + allNames.size());
         Msg.debug(this, "Base Registers: " + baseRegisterNames);
         return baseRegisterNames;
      
@@ -1974,10 +1973,11 @@ public class RESimUtilsPlugin extends Plugin {
                     Msg.debug(this, "getMemReference is character "+o+" sum now "+sum);
                 }else if(o instanceof Register){
                     Register r = (Register) o;
-                    //RegisterRow row = registerProvider.getRegisterRow(r);
-                    //BigInteger regval = row.getValue();
-                    preval = getRegValue(r.getName());
-                    Msg.debug(this, "getMemReference o is register "+r+" got value "+preval);
+                    String rname = r.getName();
+                    if(rname != null){
+                        preval = getRegValue(r.getName());
+                        Msg.debug(this, "getMemReference o is register "+r+" got value "+preval);
+                    }
                 }else if(o instanceof Scalar){
                     Scalar s = (Scalar) o;
                     Msg.debug(this, "o is Scalar "+s);

@@ -50,14 +50,6 @@ public class RESimStackPlugin extends AbstractDebuggerPlugin {
         Msg.info(this,  "IN stack plugin");
         provider = new RESimStackProvider(this);
         super.init();
-        /*
-        try {
-            provider = new RESimWatchMarksProvider(this);
-            super.init();
-        }catch(Exception e) {
-            e.printStackTrace();
-        }
-        */
     }
 
     @Override
