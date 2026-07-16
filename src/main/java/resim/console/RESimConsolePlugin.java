@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package resim.bookmarks;
+package resim.console;
 
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.debug.AbstractDebuggerPlugin;
@@ -26,8 +26,8 @@ import ghidra.util.Msg;
 import resim.utils.RESimUtilsPlugin;
 
 @PluginInfo( //
-        shortDescription = "RESim bookmarks", //
-        description = "GUI to list and create RESim bookmarks and skip to selected execution points", //
+        shortDescription = "Debugger RESim console", //
+        description = "GUI to provide interaction with RESim", //
         category = PluginCategoryNames.DEBUGGER, //
         packageName = DebuggerPluginPackage.NAME, //
         status = PluginStatus.RELEASED, //
@@ -38,20 +38,19 @@ import resim.utils.RESimUtilsPlugin;
         servicesRequired = { RESimUtilsPlugin.class  //
         } // 
 )
-public class RESimBookMarksPlugin extends AbstractDebuggerPlugin {
+public class RESimConsolePlugin extends Plugin {
 
-    protected RESimBookMarksProvider provider;
+    protected RESimConsoleProvider provider;
 
-    public RESimBookMarksPlugin(PluginTool tool) {
+    public RESimConsolePlugin(PluginTool tool) {
         super(tool);
     }
 
     @Override
     protected void init() {
-        Msg.info(this,  "book marks plugin init");
-        provider = new RESimBookMarksProvider(this);
+        Msg.info(this,  "IN console plugin");
+        provider = new RESimConsoleProvider(this);
         super.init();
-
     }
 
     @Override
@@ -66,5 +65,8 @@ public class RESimBookMarksPlugin extends AbstractDebuggerPlugin {
             TraceActivatedPluginEvent ev = (TraceActivatedPluginEvent) event;
             provider.coordinatesActivated(ev.getActiveCoordinates());
         }
+    }
+    public void addMessage(String msg) {
+        provider.addMessage("RESim:", msg);
     }
 }

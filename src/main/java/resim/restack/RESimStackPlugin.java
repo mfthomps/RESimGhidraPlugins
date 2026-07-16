@@ -23,6 +23,7 @@ import ghidra.app.plugin.core.debug.event.TraceClosedPluginEvent;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.util.Msg;
+import resim.utils.RESimUtilsPlugin;
 
 @PluginInfo( //
         shortDescription = "Debugger RESim stack trace", //
@@ -34,7 +35,7 @@ import ghidra.util.Msg;
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //
         }, //
-        servicesRequired = { //
+        servicesRequired = { RESimUtilsPlugin.class  //
         } // 
 )
 public class RESimStackPlugin extends AbstractDebuggerPlugin {

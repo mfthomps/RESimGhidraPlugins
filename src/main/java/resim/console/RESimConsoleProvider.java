@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package resim.utils;
+package resim.console;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -25,8 +26,10 @@ import javax.swing.text.Document;
 
 import docking.*;
 import docking.action.*;
+import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
+import ghidra.debug.api.tracemgr.DebuggerCoordinates;
 import ghidra.framework.main.ConsoleTextPane;
 import ghidra.framework.options.OptionsChangeListener;
 import ghidra.framework.options.ToolOptions;
@@ -37,16 +40,18 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
 import ghidra.util.*;
-import resim.bookmarks.RESimBookMarksPlugin;
+import resim.utils.RESimProvider;
+import resim.utils.RESimResources;
 import resim.utils.RESimResources.AbstractAddAction;
 import resim.utils.RESimResources.AbstractRevStepIntoAction;
 import resim.utils.RESimResources.AbstractRevStepOverAction;
 import resim.utils.RESimResources.AbstractStepIntoAction;
 import resim.utils.RESimResources.AbstractStepOverAction;
+import resim.utils.RESimUtilsPlugin;
 import resources.ResourceManager;
 
-public class RESimUtilsProvider extends ComponentProviderAdapter
-        implements ConsoleService, OptionsChangeListener {
+public class RESimConsoleProvider extends ComponentProviderAdapter
+        implements ConsoleService, OptionsChangeListener, RESimProvider {
 
     private static final String OLD_NAME = "ConsolePlugin";
     private static final String NAME = "RESimConsole";
@@ -77,6 +82,8 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     private RevStepOverAction revStepOverAction;
     private StepIntoAction stepIntoAction;
     private StepOverAction stepOverAction;
+    private DebuggerCoordinates current = DebuggerCoordinates.NOWHERE;
+
     protected class RevStepIntoAction extends AbstractRevStepIntoAction {
         public static final String GROUP = DebuggerResources.GROUP_CONTROL;
 
@@ -188,31 +195,44 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
         addMessage("RESim",  "Connected");
         Msg.debug(this,"initConsole end");
     }
-    public RESimUtilsProvider(RESimUtilsPlugin plugin) {
+    public RESimConsoleProvider(RESimConsolePlugin plugin) {
         //super(tool, "RESim-console", owner);
         super(plugin.getTool(), "WatchMarks", plugin.getName());
-        Msg.debug(this, "RESimUtilsProvider begin");
-        resimUtils = plugin;
+        Msg.debug(this, "RESimConsoleProvider begin");
         // note: the owner has not changed, just the name; remove sometime after version 10
         //ComponentProvider.registerProviderNameOwnerChange(OLD_NAME, owner, NAME, owner);
 
+        setIcon(RESimResources.ICON_RETOP);
+
+        setHelpLocation(DebuggerResources.HELP_PROVIDER_STACK);
+        setWindowMenuGroup(DebuggerPluginPackage.NAME);
+        Msg.debug(this,  "did set window");
         setDefaultWindowPosition(WindowPosition.BOTTOM);
-        //setHelpLocation(new HelpLocation(owner, owner));
-        setIcon(ResourceManager.loadImage(CONSOLE_GIF));
-        setWindowMenuGroup("Console");
+
+        setVisible(true);
+
+        //setWindowMenuGroup("Console");
         setSubTitle("Console");
         setTitle("RESim");
         createOptions();
         build();
         createActions();
         initConsole();
-        Msg.debug(this, "RESimUtilsProvider end");
+        Msg.debug(this, "call to get RESimUtils from RESimConsoleProvider");
+        resimUtils = RESimUtilsPlugin.getRESimUtils(tool);
+        if(resimUtils == null) {
+            Msg.error(this,  "Failed to get resimUtils");
+        }else {
+            resimUtils.registerRefresh(this);
+            Msg.debug(this, "Registered refresh with resimUtils");
+        }
+        Msg.debug(this, "RESimConsoleProvider end");
     }
 
     void init() {
         stderr = new PrintWriter(new ConsoleWriter(this, true));
         stdin = new PrintWriter(new ConsoleWriter(this, false));
-        Msg.debug(this, "RESimUtilsProvider init");
+        Msg.debug(this, "RESimConsoleProvider init");
 
         /* call this before build() -- we get our Font here */
         setVisible(true);
@@ -249,7 +269,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
         textPane.setName("RESim CONSOLE");
         textPane.setFont(font);
         textPane.setEditable(false);
-        Msg.debug(this, "RESimUtilsProvider build");
+        Msg.debug(this, "RESimConsoleProvider build");
 
         textPane.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -401,7 +421,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
                 clearMessages();
             }
         };
-        Msg.debug(this, "RESimUtilsProvider createActions begin");
+        Msg.debug(this, "RESimConsoleProvider createActions begin");
         clearAction.setDescription("Clear Console");
         revStepIntoAction = new RevStepIntoAction(resimUtils);
         revStepIntoAction.setKeyBindingData(new KeyBindingData(
@@ -417,7 +437,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
         stepOverAction.setKeyBindingData(new KeyBindingData(
                 KeyStroke.getKeyStroke(KeyEvent.VK_F12, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
 // ACTIONS - auto generated
-        Msg.debug(this, "RESimUtilsProvider createActions did bindings");
+        Msg.debug(this, "RESimConsoleProvider createActions did bindings");
         clearAction.setToolBarData(new ToolBarData(ResourceManager.loadImage(CLEAR_GIF), null));
 
         clearAction.setEnabled(true);
@@ -437,7 +457,7 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
 
         addLocalAction(scrollAction);
         addLocalAction(clearAction);
-        Msg.debug(this, "RESimUtilsProvider createActions done");
+        Msg.debug(this, "RESimConsoleProvider createActions done");
     }
 
     @Override
@@ -577,5 +597,34 @@ public class RESimUtilsProvider extends ComponentProviderAdapter
     public void setCurrentAddress(Address address) {
         currentAddress = address;
     }
+    @Override
+    public void refresh() {
+	// TODO Auto-generated method stub
+	
+    }
+    public void coordinatesActivated(DebuggerCoordinates coordinates) {
+        if (sameCoordinates(current, coordinates)) {
+            current = coordinates;
+            return;
+        }
+        current = coordinates;
+
+    }
+    protected static boolean sameCoordinates(DebuggerCoordinates a, DebuggerCoordinates b) {
+        if (!Objects.equals(a.getTrace(), b.getTrace())) {
+            return false;
+        }
+        if (!Objects.equals(a.getThread(), b.getThread())) {
+            return false;
+        }
+        if (!Objects.equals(a.getTime(), b.getTime())) {
+            return false;
+        }
+        if (!Objects.equals(a.getFrame(), b.getFrame())) {
+            return false;
+        }
+        return true;
+    }
+
 
 }

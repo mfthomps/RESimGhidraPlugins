@@ -20,6 +20,7 @@ import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import resim.utils.RESimUtilsPlugin;
 
 /**
  * A plugin to show tool tip text for hovering over memory reference values in the listing.
@@ -33,7 +34,8 @@ import ghidra.framework.plugintool.util.PluginStatus;
 	category = PluginCategoryNames.CODE_VIEWER,
 	shortDescription = "Memory reference Operand Hover",
 	description = "Pop-up display address and value of memory reference operands.",
-	servicesProvided = { ListingHoverService.class }
+	servicesProvided = { ListingHoverService.class },
+    servicesRequired = { RESimUtilsPlugin.class } 
 )
 //@formatter:on
 public class ReferenceOperandListingHoverPlugin extends Plugin {

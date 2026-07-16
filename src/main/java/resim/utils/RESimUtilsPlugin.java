@@ -39,12 +39,12 @@ import ghidra.debug.api.tracermi.RemoteMethod;
 import ghidra.debug.api.tracermi.TraceRmiConnection;
 import ghidra.file.formats.android.bootldr.AndroidBootLoaderAnalyzer;
 import ghidra.app.plugin.core.colorizer.ColorizingService;
+import ghidra.app.plugin.core.debug.AbstractDebuggerPlugin;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.event.*;
 import ghidra.app.plugin.core.debug.gui.action.PCByRegisterLocationTrackingSpec;
 import ghidra.app.plugin.core.debug.gui.register.DebuggerRegistersProvider;
 import ghidra.app.plugin.core.debug.gui.register.RegisterRow;
-import ghidra.app.services.DebuggerConsoleService;
 import ghidra.app.services.DebuggerListingService;
 import ghidra.app.services.DebuggerTargetService;
 import ghidra.framework.options.Options;
@@ -133,6 +133,7 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.NotFoundException;
 import ghidra.util.task.TaskMonitor;
+
 import java.awt.Color;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -148,6 +149,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonWriter;
+import resim.dumbplug.dumbplug;
 
 @PluginInfo( //
         shortDescription = "RESim Utils", //
@@ -160,7 +162,7 @@ import com.google.gson.stream.JsonWriter;
                 TraceSelectionPluginEvent.class, //
 
         }, //
-        servicesRequired = { //
+        servicesProvided = { RESimUtilsPlugin.class //
         } //
 )
 /*
@@ -186,7 +188,6 @@ public class RESimUtilsPlugin extends Plugin {
     private ArrayList<RESimProvider> refreshProviders;
     private ArrayList<RESimProvider> initProviders;
     public final static String MENU_RESIM = "&RESim";
-    protected RESimUtilsProvider provider;
     private boolean didMapping = false;
     private Trace current_trace = null;
     protected RESimUtilsPlugin plugin = this;
@@ -216,8 +217,8 @@ public class RESimUtilsPlugin extends Plugin {
     @Override
     protected void init() {
         Msg.info(this, "in init");
-        provider = new RESimUtilsProvider(this);
         createActions();
+        super.init();
 
     }
 
@@ -306,10 +307,6 @@ public class RESimUtilsPlugin extends Plugin {
         AddressSpace dynRam = current_trace.getBaseAddressFactory().getDefaultAddressSpace();
         return dynRam.getAddress(addr);
 
-    }
-
-    public void addMessage(String msg) {
-        provider.addMessage("RESim:", msg);
     }
 
     public void myTest() {
@@ -934,11 +931,6 @@ public class RESimUtilsPlugin extends Plugin {
     }
 
     @Override
-    protected void dispose() {
-        tool.removeComponentProvider(provider);
-    }
-
-    @Override
     public void processEvent(PluginEvent event) {
         super.processEvent(event);
         if (event instanceof TraceActivatedPluginEvent) {
@@ -1204,7 +1196,6 @@ public class RESimUtilsPlugin extends Plugin {
             return false;
         }
     }
-
     protected void addThread(java.util.HashMap<Object, Object> entry) {
 
         Range<Long> r = Range.atLeast(0L);
@@ -1903,14 +1894,14 @@ public class RESimUtilsPlugin extends Plugin {
         }
     }
 
-    void revStep(boolean into) {
+    public void revStep(boolean into) {
         if (into) {
             doRESimRefresh("revStepInto()");
         } else {
             doRESimRefresh("revStepOver()");
         }
     }
-    void step(boolean into) {
+    public void step(boolean into) {
         if (into) {
             doRESimRefresh("stepInto()");
         } else {

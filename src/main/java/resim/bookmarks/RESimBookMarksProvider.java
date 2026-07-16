@@ -40,6 +40,7 @@ import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
 import ghidra.framework.plugintool.AutoService;
 import ghidra.framework.plugintool.ComponentProviderAdapter;
+import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.annotation.AutoServiceConsumed;
 import ghidra.program.model.address.Address;
 import ghidra.trace.model.thread.TraceThread;
@@ -55,8 +56,10 @@ import resim.utils.RESimProvider;
 import resim.utils.RESimRegAction;
 import resim.utils.RESimResources.*;
 import resim.utils.RESimResources;
+import resim.console.RESimConsolePlugin;
 public class RESimBookMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
+    private RESimConsolePlugin resim_console = getRESimConsolePlugin(tool);
     protected enum BookMarksTableColumns
         implements EnumeratedTableColumn<BookMarksTableColumns, RESimBookMarksRow> {
         INDEX("Index", Integer.class, RESimBookMarksRow::getIndex),
@@ -167,7 +170,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             Msg.debug(this,  "Add bookmark is "+cmd);
             resimUtils.doRESim(cmd).thenApply(stuff ->{
                 Msg.debug(this,  "resim said "+stuff);
-                resimUtils.addMessage((String) stuff);
+                resim_console.addMessage((String) stuff);
                 refresh();
                 return stuff;
             });
@@ -231,13 +234,32 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
     private RESimBookMarksPlugin plugin;
     private MyRefreshAction actionRefresh;
     private AddAction actionAdd;
+    public static RESimConsolePlugin getRESimConsolePlugin(PluginTool tool) {
+        /**
+         * @return The RESim console plugin.
+         *
+         */
+        Msg.out("getRESimConsolePlugin");
+        RESimConsolePlugin resim_console = null;
+        List<Plugin> pluginList = tool.getManagedPlugins();
+        for (Plugin p : pluginList) {
+            if (p.getClass() == RESimConsolePlugin.class) {
+                resim_console = (RESimConsolePlugin) p;
+                break;
+            }
+        }
+
+        if (resim_console == null) {
+            Msg.out("No resim_console, bail");
+        }
+        return resim_console;
+    }
 
     public RESimBookMarksProvider(RESimBookMarksPlugin plugin)  {
         super(plugin.getTool(), "BookMarks", plugin.getName());
         this.plugin = plugin;
         PluginTool tool = plugin.getTool();
         bookMarksTableModel = new BookMarksTableModel(tool);
-
         
         this.autoServiceWiring = AutoService.wireServicesConsumed(plugin, this);
 

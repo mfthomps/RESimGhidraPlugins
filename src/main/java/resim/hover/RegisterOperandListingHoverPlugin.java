@@ -20,6 +20,7 @@ import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
+import resim.utils.RESimUtilsPlugin;
 
 /**
  * A plugin to show tool tip text for hovering a register to see its value.
@@ -33,7 +34,7 @@ import ghidra.framework.plugintool.util.PluginStatus;
 	category = PluginCategoryNames.CODE_VIEWER,
 	shortDescription = "Register Operand Hover",
 	description = "Pop-up display value of register operands.",
-	servicesProvided = { ListingHoverService.class }
+	servicesProvided = { ListingHoverService.class,  RESimUtilsPlugin.class } 
 )
 //@formatter:on
 public class RegisterOperandListingHoverPlugin extends Plugin {
