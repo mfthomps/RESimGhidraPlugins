@@ -196,6 +196,7 @@ public class RESimUtilsPlugin extends Plugin {
     private List<RegisterValue> latest_register_frame = null;
     private long load_offset = 0;
     private String load_string = null;
+    protected List<String> x32_regs = List.of("EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI", "ES", "CS", "SS", "DS", "FS", "GS", "FS_OFFSET", "GS_OFFSET"); 
 
     /**
      * Construct the RESimUtils plugin.
@@ -326,8 +327,9 @@ public class RESimUtilsPlugin extends Plugin {
         Msg.debug(this, "Langauge is "+language.toString());
         List<String> baseRegisterNames = null;
         if(language.toString().equals("x86/little/32/default")){
-            baseRegisterNames = List.of("EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI", "ES", "CS", "SS", "DS", "FS", "GS", "FS_OFFSET", "GS_OFFSET"); 
+            baseRegisterNames = x32_regs;
         }else{
+            Msg.debug(this, "USING FULL REGISTER LIST**********************");
             baseRegisterNames = language.getRegisters().stream()
                 .filter(Register::isBaseRegister)
                 .map(Register::getName)
@@ -812,7 +814,7 @@ public class RESimUtilsPlugin extends Plugin {
         //       .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.SHIFT_DOWN_MASK)).buildAndInstall(tool);
         new ActionBuilder("Reverse step into", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-into")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse").onAction(c -> doRESimRefresh("revStepInto()"))
-                .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F8, InputEvent.CTRL_DOWN_MASK)).buildAndInstall(tool);
+                .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F9, InputEvent.CTRL_DOWN_MASK)).buildAndInstall(tool);
         new ActionBuilder("Reverse step over", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Reverse", "&Step-over")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Reverse").onAction(c -> doRESimRefresh("revStepOver()"))
                 .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F10, InputEvent.CTRL_DOWN_MASK)).buildAndInstall(tool);
@@ -999,6 +1001,7 @@ public class RESimUtilsPlugin extends Plugin {
     }
     protected RemoteAsyncResult readCurrentFrame(DebuggerCoordinates current, boolean forceRefresh) {
         //List<String> REG_NAMES = List.of("r1", "r2", "pc");
+       
         List<String> REG_NAMES = getRegList();
         long snap = current.getSnap();
         TracePlatform platform = current.getPlatform();
@@ -1021,7 +1024,7 @@ public class RESimUtilsPlugin extends Plugin {
     }
     protected List<RegisterValue> readRegisters(TracePlatform platform, TraceThread thread, int frame,
                         long snap, Collection<Register> registers) {
-                Msg.debug(this, "readRegisters call refreshRegisersIfLive");
+                Msg.debug(this, "readRegisters call refreshRegisersIfLive. num registers is "+registers.size());
                 refreshRegistersIfLive(platform, thread, frame, snap, registers);
                 Msg.debug(this, "readRegisters back from refreshRegisersIfLive");
                 TraceMemorySpace regs =
