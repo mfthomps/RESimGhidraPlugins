@@ -164,10 +164,7 @@ import com.google.gson.stream.JsonWriter;
         servicesProvided = { RESimUtilsPlugin.class //
         } //
 )
-/*
- * Want this plugin to load first. Does not otherwise need to extend Plugin, it
- * has no window
- */
+
 public class RESimUtilsPlugin extends Plugin {
     private PluginTool tool;
     private Program program;
@@ -1012,7 +1009,7 @@ public class RESimUtilsPlugin extends Plugin {
         //if (forceRefresh) {
         //        setUnknown(platform, thread, frame, snap, regs);
         //}
-        Msg.debug(this, "call readRegisters");
+        Msg.debug(this, "call readRegisters len of regs is "+ regs.size());
         List<RegisterValue> value_list = readRegisters(platform, thread, frame, snap, regs);
         for (RegisterValue reg_value : value_list) {
                 Msg.debug(this, "readCurrentFrame value is "+reg_value);

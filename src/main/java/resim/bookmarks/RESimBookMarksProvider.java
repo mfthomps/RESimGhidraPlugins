@@ -312,7 +312,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
                 if (myActionContext == null) {
                     return;
                 }
-                int index = myActionContext.getRow().getIndex();
+                int index = myActionContext.getRow().getIndex() + 1;
                 String cmd = "goToDebugBookmark("+index+")";
                 resimUtils.doRESimRefresh(cmd);
 

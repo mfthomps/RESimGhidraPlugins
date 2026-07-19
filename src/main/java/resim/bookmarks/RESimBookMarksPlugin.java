@@ -23,6 +23,7 @@ import ghidra.app.plugin.core.debug.event.TraceClosedPluginEvent;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import ghidra.util.Msg;
+import resim.console.RESimConsolePlugin;
 import resim.utils.RESimUtilsPlugin;
 
 @PluginInfo( //
@@ -35,7 +36,7 @@ import resim.utils.RESimUtilsPlugin;
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //
         }, //
-        servicesRequired = { RESimUtilsPlugin.class  //
+        servicesRequired = { RESimUtilsPlugin.class, RESimConsolePlugin.class  //
         } // 
 )
 public class RESimBookMarksPlugin extends AbstractDebuggerPlugin {

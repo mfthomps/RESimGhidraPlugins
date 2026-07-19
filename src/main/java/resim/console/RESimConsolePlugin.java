@@ -35,15 +35,18 @@ import resim.utils.RESimUtilsPlugin;
             TraceActivatedPluginEvent.class, //
             TraceClosedPluginEvent.class, //
         }, //
+        servicesProvided = { RESimConsolePlugin.class}, //
         servicesRequired = { RESimUtilsPlugin.class  //
         } // 
 )
+//public class RESimConsolePlugin extends AbstractDebuggerPlugin {
 public class RESimConsolePlugin extends Plugin {
 
     protected RESimConsoleProvider provider;
 
     public RESimConsolePlugin(PluginTool tool) {
         super(tool);
+        Msg.info(this,  "RESimConsolePlugin plugin");
     }
 
     @Override

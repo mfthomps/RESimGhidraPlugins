@@ -26,6 +26,7 @@ import javax.swing.text.Document;
 
 import docking.*;
 import docking.action.*;
+import docking.action.builder.ActionBuilder;
 import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.app.plugin.core.debug.gui.DebuggerResources;
 import ghidra.app.services.*;
@@ -98,7 +99,7 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         @Override
         public void actionPerformed(ActionContext context) {
             Msg.debug(this, "actionPerformed revStepInto");
-            resimUtils.revStep(false);
+            resimUtils.doRESimRefresh("revStepInto()");
         }
 
         @Override
@@ -123,7 +124,7 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         @Override
         public void actionPerformed(ActionContext context) {
             Msg.debug(this, "actionPerformed revStepOver");
-            resimUtils.revStep(false);
+            resimUtils.doRESimRefresh("revStepOver()");
         }
 
         @Override
@@ -197,7 +198,7 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
     }
     public RESimConsoleProvider(RESimConsolePlugin plugin) {
         //super(tool, "RESim-console", owner);
-        super(plugin.getTool(), "WatchMarks", plugin.getName());
+        super(plugin.getTool(), "RESimConsole", plugin.getName());
         Msg.debug(this, "RESimConsoleProvider begin");
         // note: the owner has not changed, just the name; remove sometime after version 10
         //ComponentProvider.registerProviderNameOwnerChange(OLD_NAME, owner, NAME, owner);
@@ -215,9 +216,9 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         setSubTitle("Console");
         setTitle("RESim");
         createOptions();
+        Msg.debug(this, "call build");
         build();
-        createActions();
-        initConsole();
+        //createActions();
         Msg.debug(this, "call to get RESimUtils from RESimConsoleProvider");
         resimUtils = RESimUtilsPlugin.getRESimUtils(tool);
         if(resimUtils == null) {
@@ -226,6 +227,10 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
             resimUtils.registerRefresh(this);
             Msg.debug(this, "Registered refresh with resimUtils");
         }
+        Msg.debug(this, "call createActions");
+        createActions();
+        Msg.debug(this, "call initConsole");
+        initConsole();
         Msg.debug(this, "RESimConsoleProvider end");
     }
 
@@ -342,7 +347,8 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         component = new JPanel(new BorderLayout(5, 5));
         component.add(scroller, BorderLayout.CENTER);
 
-        tool.addComponentProvider(this, true);
+        Msg.debug(this, "RESimConsoleProvider call addComponentProvider");
+        //tool.addComponentProvider(this, true);
     }
 
     private void goTo(ConsoleWord word) {
@@ -424,11 +430,11 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         Msg.debug(this, "RESimConsoleProvider createActions begin");
         clearAction.setDescription("Clear Console");
         revStepIntoAction = new RevStepIntoAction(resimUtils);
-        revStepIntoAction.setKeyBindingData(new KeyBindingData(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F8, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
+        //revStepIntoAction.setKeyBindingData(new KeyBindingData(
+        //        KeyStroke.getKeyStroke(KeyEvent.VK_F9, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
         revStepOverAction = new RevStepOverAction(resimUtils);
-        revStepOverAction.setKeyBindingData(new KeyBindingData(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F10, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
+        //revStepOverAction.setKeyBindingData(new KeyBindingData(
+        //        KeyStroke.getKeyStroke(KeyEvent.VK_F10, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
 
         stepIntoAction = new StepIntoAction(resimUtils);
         stepIntoAction.setKeyBindingData(new KeyBindingData(
