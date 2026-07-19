@@ -1,2 +1,2 @@
-unzip ~/gitpat.zip -d /tmp
-export gitpat=$(cat /tmp/pat)
+unzip ~/ghidra-plugin-release.pat.zip -d /tmp
+export gitpat=$(cat /tmp/ghidra-plugin-release.pat)

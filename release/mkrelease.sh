@@ -2,7 +2,7 @@
 #
 # Create a RESim Ghidra plugins release.
 # Assumes you've exported the jar file using the GhidraDev plugin
-# and the result is in ~/eclipse-workspace/RESimPlugin/dist
+# and the result is in ~/neweclipse2/RESimPluginY/dist
 #
 #
 if [[ -z "$1" ]]; then
@@ -23,7 +23,7 @@ if [[ ! -d release ]]; then
     exit 
 fi
 git checkout master || exit
-dist_dir=~/eclipse-workspace/RESimPlugin/dist
+dist_dir=~/neweclipse2/RESimPluginY/dist
 latest=$(ls -t $dist_dir | head -n 1)
 echo "Will release latest: $latest"
 full=$dist_dir/$latest
@@ -34,10 +34,11 @@ cp $full artifacts/
 new_tag=$1
 here=`pwd`
 
-git tag $new_tag
+git tag $new_tag || exit
 #git push --set-upstream origin master
 git push --tags
 
+echo "github-release release --security-token $gitpat --user mfthomps --repo RESimGhidraPlugins --tag $new_tag"
 github-release release --security-token $gitpat --user mfthomps --repo RESimGhidraPlugins --tag $new_tag
 echo "wait for github"
 while [ -z "$(github-release info --security-token $gitpat --user mfthomps --repo RESimGhidraPlugins --tag $new_tag | grep releases:)" ]; do
