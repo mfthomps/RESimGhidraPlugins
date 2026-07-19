@@ -27,9 +27,9 @@ dist_dir=~/neweclipse2/RESimPluginY/dist
 latest=$(ls -t $dist_dir | head -n 1)
 echo "Will release latest: $latest"
 full=$dist_dir/$latest
-rm -fr artifacts
-mkdir -p artifacts
-cp $full artifacts/
+rm -fr release/artifacts
+mkdir -p release/artifacts
+cp $full release/artifacts/
 
 new_tag=$1
 here=`pwd`
