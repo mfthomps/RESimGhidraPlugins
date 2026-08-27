@@ -59,6 +59,7 @@ import resim.utils.RESimProvider;
 import resim.utils.RESimResources;
 import resim.utils.RESimResources.AbstractRefreshAction;
 import resim.utils.RESimUtilsPlugin;
+import resim.libs.RESimLibs;
 public class RESimWatchMarksProvider extends ComponentProviderAdapter implements RESimProvider{
 
     protected enum WatchMarksTableColumns
@@ -348,6 +349,34 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
     public void clear() {
         watchMarksTableModel.clear();
     }
+    /**
+     * Selects and highlights a row in the table by its row index.
+     * 
+     * @param rowIndex The zero-based index of the row to highlight.
+     */
+    public void highlightRowByIndex(int rowIndex) {
+        // Check if the rowIndex is valid for the current table model.
+        int row_count = watchMarksTable.getRowCount();
+        if (rowIndex < 0 || rowIndex >= row_count){
+            Msg.warn(this, "Attempted to highlight an invalid row index: " + rowIndex + " row count "+row_count);
+            return;
+        }
+
+        // Set the selection to the specified row index.
+        // This clears any existing selection.
+        Msg.debug(this, "call setSelectionInterval");
+        watchMarksTable.getSelectionModel().setSelectionInterval(rowIndex, rowIndex);
+
+        // Ensure the JScrollPane scrolls to the newly selected row to make it visible.
+        Msg.debug(this, "call getCellRect");
+        java.awt.Rectangle cellRect = watchMarksTable.getCellRect(rowIndex, 0, true);
+        if (cellRect != null) {
+            watchMarksTable.scrollRectToVisible(cellRect);
+        }else{
+            Msg.debug(this, "call cellRect was null");
+        }
+    }
+        
     public void add(RESimWatchMarksRow row) {
     	//Msg.debug(this, "watchmarks in add row");
         watchMarksTableModel.add(row);
@@ -370,42 +399,82 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         add(wmr); 
     }
     @SuppressWarnings("unchecked")
-    public void refresh(){
+    public void refresh() {
         Msg.debug(this, "refresh watchmarks");
-        if(resimUtils == null) {
-            Msg.out("call to get RESimUtils");
-            System.out.println("call to getRESimUtils");
-            resimUtils = RESimUtilsPlugin.getRESimUtils(tool);
-        }
-        if(resimUtils == null) {
-            Msg.error(this,  "Cannot refresh, no RESimUtils");
-            return;
-        }
+        // Step 1: Call refreshList() to get its Future.
+        // This starts the process of populating the table.
+        java.util.concurrent.CompletableFuture<Void> listReadyFuture = refreshList();
+    
+        // Step 2: Use that Future to chain the call to latestMark().
+        // The 'thenRun' method ensures that latestMark() is only called
+        // after the refreshList() operation is fully complete.
+        listReadyFuture.thenRun(() -> {
+            latestMark();
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during refresh:\n" + sw.toString());
+            return null;
+        });
 
-        clear();
-        String cmd = "getWatchMarks()";
-        //println("cmd is "+cmd);
-
-        resimUtils.doRESim(cmd).thenApply(watch_string ->{
-            if(watch_string == null) {
+    }
+    /**
+     * Clears the watch marks table and repopulates it by fetching data from RESim.
+     * @return A CompletableFuture that completes when the table has been repopulated.
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.concurrent.CompletableFuture<Void> refreshList() {
+        clear(); // Clear the table model immediately
+        return resimUtils.doRESim("getWatchMarks()").thenAccept(watch_string -> {
+            if (watch_string == null) {
                 Msg.error(this, "Failed to get watchMarks json from RESim");
-                return null;
+                return; // Stop processing
             }
-            //Msg.debug(this, "watch_string is"+watch_string);
+            
+            // This block executes when the watch_string is received
             Object watch_json = Json.getJson(watch_string);
             java.util.List<Object> watchMarks = (java.util.ArrayList<Object>) watch_json;
             int index = 1;
+            
             Msg.debug(this,  "len of watchmarks is "+watchMarks.size());
             for(Object o : watchMarks){
-            	//Msg.debug(this,  "doing watchmark for entry");
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
-                add(entry, index);
+                add(entry, index); // Add row to the table model
                 index++;
             }
             actionRefresh.setEnabled(true);
-            return watch_string;
         });
-        
     }
+
+    /**
+     * Fetches the index of the next watch mark and highlights the corresponding row.
+     * This method assumes the table has already been populated.
+     */
+    public void latestMark() {
+        resimUtils.doRESim("nextWatchMark()").thenAccept(cycle_output ->{
+            if(cycle_output == null) {
+                Msg.error(this, "Failed to get showCycle output from RESim");
+                return;
+            }
+            try {
+                String firstLine = RESimLibs.firstLine(cycle_output);
+                // The API returns a 1-based index; the table model is 0-based.
+                int next_index = Integer.parseInt(firstLine) - 1;
+                Msg.debug(this, "Highlighting next index (0-based): " + next_index);
+                highlightRowByIndex(next_index);
+            } catch (NumberFormatException e) {
+                Msg.error(this, "Could not parse index from nextWatchMark output: " + cycle_output);
+            }
+        }).exceptionally(throwable -> {
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async nextWatchMark error:\n" + sw.toString());
+            return null; 
+        });
+    }
+ 
     
 }
