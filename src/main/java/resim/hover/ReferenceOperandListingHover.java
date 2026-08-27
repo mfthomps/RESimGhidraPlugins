@@ -37,7 +37,6 @@ import ghidra.program.util.ProgramLocation;
 import ghidra.trace.model.Trace;
 import ghidra.util.HTMLUtilities;
 import ghidra.util.Msg;
-import resim.libs.RESimLibs;
 import resim.utils.RESimUtilsPlugin;
 
 public class ReferenceOperandListingHover extends AbstractConfigurableHover 
@@ -97,7 +96,6 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
 	@Override
 	public JComponent getHoverComponent(Program program, ProgramLocation programLocation,
 			FieldLocation fieldLocation, Field field) {
-                enabled = false;
 		if (!enabled || programLocation == null) {
 			return null;
 		}
@@ -122,6 +120,7 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
                 }
 		Address memReference  = utilsPlugin.getMemReference(operandLocation, instruction);
 		if (memReference == null) {
+		        Msg.debug(this,  "hover, memReference is null");
 			return null;
 		}
 		
