@@ -31,7 +31,6 @@ import ghidra.util.HelpLocation;
 import ghidra.util.Msg;
 import ghidra.program.util.OperandFieldLocation;
 import ghidra.program.util.ProgramLocation;
-import resim.libs.RESimLibs;
 /**
 
  * Action in RESimUtils.
@@ -97,7 +96,7 @@ public class RESimCursorAction extends ListingContextAction {
             ProgramLocation loc = context.getLocation();
             Msg.debug(this, "actionPeformed loc "+loc.toString());
             Address a = loc.getAddress();
-            Msg.debug(this, "actionPeformed addres "+a);
+            Msg.debug(this, "actionPeformed address "+a);
             if(a != null){
                 entry = a;
                 Instruction instruction = context.getProgram().getListing().getInstructionAt(a);
@@ -127,6 +126,8 @@ public class RESimCursorAction extends ListingContextAction {
         String full_cmd = this.cmd+"(0x"+Long.toHexString(addr)+")";
         if(this.cmd.equals("doBreak")){
             full_cmd = this.cmd+"("+addr+",run=True)";
+        } else if(this.cmd.equals("revToAddr")){
+            full_cmd = this.cmd+"("+addr+",quiet=True)";
         }
         Msg.debug(this, "In actionPerformed will do cmd: "+full_cmd);
         try {
