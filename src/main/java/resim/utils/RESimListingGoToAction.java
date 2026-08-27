@@ -34,7 +34,6 @@ import ghidra.program.util.OperandFieldLocation;
 import ghidra.program.util.ProgramLocation;
 import ghidra.util.HelpLocation;
 import ghidra.util.Msg;
-import resim.libs.RESimLibs;
 /**
  *  Go to an address whose value is found at operand of the cursor location, e.g., [EAX]
  *  Currently used with right click.  TBD figure out how to trigger with double-click.
