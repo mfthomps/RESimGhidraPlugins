@@ -277,7 +277,16 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
                 if (pc == null) {
                     return;
                 }
-                listingService.goTo(pc, true);
+                Trace trace = traceManager.getCurrentTrace();
+
+                // Convert the offset to an Address in the Trace's AddressFactory
+                Address tracePc = trace.getBaseAddressFactory()
+                                       .getDefaultAddressSpace()
+                                       .getAddress(pc.getOffset());
+
+                Msg.debug(this, "mouseListener pc " + Long.toHexString(pc.getOffset()));
+                listingService.goTo(tracePc, true);
+                //listingService.goTo(pc, true);
             }
 
 
