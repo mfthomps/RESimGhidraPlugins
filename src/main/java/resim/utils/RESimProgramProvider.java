@@ -69,7 +69,9 @@ public class RESimProgramProvider extends ComponentProviderAdapter {
     protected void revToCursor() {
         Address addr = this.currentLocation.getAddress();
         long offset = addr.getOffset();
-        String cmd = "revToAddr("+offset+")";
+        Msg.debug(this, "revToCursor offset "+Long.toHexString(offset));
+        String cmd = "revToAddr("+Long.toHexString(offset)+",quiet=True)";
+        Msg.debug(this, "cmd: "+cmd);
         try {
             resimUtils.doRESimRefresh(cmd);
         } catch (Exception e) {
