@@ -46,8 +46,10 @@ import ghidra.app.plugin.core.debug.gui.action.PCByRegisterLocationTrackingSpec;
 import ghidra.app.plugin.core.debug.gui.register.DebuggerRegistersProvider;
 import ghidra.app.plugin.core.debug.gui.register.RegisterRow;
 import ghidra.app.services.DebuggerListingService;
+import ghidra.app.services.DebuggerStaticMappingService;
 import ghidra.app.services.DebuggerTargetService;
 import ghidra.framework.options.Options;
+import ghidra.framework.options.ToolOptions;
 import ghidra.framework.plugintool.Plugin;
 import ghidra.framework.plugintool.PluginEvent;
 import ghidra.framework.plugintool.PluginInfo;
@@ -57,6 +59,7 @@ import ghidra.framework.preferences.Preferences;
 import ghidra.framework.store.LockException;
 import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.address.AddressRange;
@@ -363,22 +366,11 @@ public class RESimUtilsPlugin extends Plugin {
         //    // TODO Auto-generated catch block
         //    e.printStackTrace();
         //}
-        Msg.debug(this, "call again bonzo");
-        CompletableFuture<String> retval = doRESim("getEIPWhenStopped()");
-        Msg.debug(this, "back from getEIPWhenStopped now refesh client");
-        refreshClient(true);
+        Msg.debug(this, "Now call getEIPWheStopped");
+        CompletableFuture<String> retval = doRESim("getEIPWhenStopped()", true);
+        Msg.debug(this, "back from getEIPWhenStopped");
+        //refreshClient(true);
         return retval;
-    }
-
-    public CompletableFuture<String> doRESim(String cmd) {
-        /**
-         * Use the gdb monitor to send a command to RESim
-         * 
-         * @param cmd Command to execute
-         * @return The response from RESim
-         */
-        Msg.debug(this, "in doRESim for cmd "+cmd);
-        return doGdbCmd("monitor @cgc." + cmd);
     }
     public CompletableFuture<String> doSimics(String cmd) {
         /**
@@ -390,8 +382,24 @@ public class RESimUtilsPlugin extends Plugin {
         Msg.debug(this, "in doSimics for cmd "+cmd);
         return doGdbCmd("monitor " + cmd);
     }
-
+    public CompletableFuture<String> doRESim(String cmd) {
+        return doRESim(cmd, false);
+    }
+    public CompletableFuture<String> doRESim(String cmd, boolean refresh) {
+        /**
+         * Use the gdb monitor to send a command to RESim
+         * 
+         * @param cmd Command to execute
+         * @return The response from RESim
+         */
+        Msg.debug(this, "in doRESim for cmd "+cmd+" refresh "+refresh);
+        String cmd_param = "monitor @cgc." + cmd;
+        return doGdbCmd(cmd_param, refresh);
+    }
     public CompletableFuture<String> doGdbCmd(String dbg_cmd) {
+        return doGdbCmd(dbg_cmd, false);
+    }
+    public CompletableFuture<String> doGdbCmd(String dbg_cmd, boolean refresh) {
         /**
          * Send a command to the GDB console.
          * 
@@ -402,24 +410,54 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.error(this, "gdb_execute_method is null");
             return null;
         }
-        Msg.debug(this, "in doGdbCmd for cmd "+dbg_cmd);
+        Msg.debug(this, "in doGdbCmd for cmd "+dbg_cmd+" refresh: "+refresh);
         return CompletableFuture.supplyAsync(() -> {
             RemoteAsyncResult async_result;
             String result = null;
-
-            async_result = gdb_execute_method.invokeAsync(Map.of("cmd", dbg_cmd, "to_string", true));
-
-            try {
-                result = (String) async_result.get();
-                Msg.debug(this, "did async_result.get and got len "+result.length());
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                Msg.error(this, getExceptString(e));
-                Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
-            } catch (ExecutionException e) {
-                // TODO Auto-generated catch block
-                Msg.error(this, getExceptString(e));
-                Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
+            boolean done = false;
+            int loop_count = 0;
+            while(!done){
+                loop_count += 1;
+                async_result = gdb_execute_method.invokeAsync(Map.of("cmd", dbg_cmd, "to_string", true));
+    
+                try {
+                    result = (String) async_result.get();
+                    Msg.debug(this, "did async_result.get and got len "+result.length()+" "+result.substring(0,Math.min(result.length(), 20)));
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    Msg.error(this, getExceptString(e));
+                    Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
+                } catch (ExecutionException e) {
+                    // TODO Auto-generated catch block
+                    Msg.debug(this, "doGDBCmd ExecutionException,  where from?");
+                    Msg.error(this, getExceptString(e));
+                    Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
+                }
+                if(refresh){
+                    Msg.debug(this, "doGDBCmd finished command, refresh was true async_result is "+async_result.toString());
+                    if(result != null){
+                        if(!result.startsWith("not stopped")){
+                            done = true;
+                            Msg.debug(this, "doGDBCmd think we are ready to refresh result "+result);
+                            refreshClient(true);
+                        }else{
+                            Msg.debug(this, "doGDBCmd not done, sleep 1");
+                            try {
+                                Thread.sleep(1000);
+                            } catch (InterruptedException e) {
+                               // TODO Auto-generated catch block
+                               e.printStackTrace();
+                            }
+                        } 
+                   }else{
+                       Msg.debug(this, "doGDBCmd refresh and result is null?");
+                   }
+                }else{
+                    done = true;
+                }
+                if(loop_count > 40){
+                    break;
+                }
             }
             return result;
         });
@@ -478,122 +516,147 @@ public class RESimUtilsPlugin extends Plugin {
         Msg.debug(this, "back from addModule");
 
     }
-
-    protected void addModule(java.util.HashMap<Object, Object> somap) {
-        /**
-         * Add a module and its sections, as defined by a RESim SO map json, to the
-         * Ghidra modules
-         * 
-         * @param somap The json hashmap
-         */
-        Msg.debug(this, "in addModule");
-        /*
-         * ArrayList <java.util.HashMap<Object, Object>> sections=null; try { sections =
-         * (ArrayList <java.util.HashMap<Object, Object>>) somap.get("sections"); }catch
-         * (Exception e) { Msg.debug(this, getExceptString(e)); }
-         * 
-         * Long start = 0L; Long end = 0L; Long offset = 0L; Program current_program =
-         * getProgram(); String target_path = current_program.getExecutablePath();
-         * String target_base = (String) FilenameUtils.getName(target_path);
-         * 
-         * String prog_path = (String) somap.get("prog_local_path"); String prog_base =
-         * (String) FilenameUtils.getName(prog_path); String module_path = null;
-         * if(target_base.equals(prog_base)){ String pid_o = (String)
-         * somap.get("group_leader");
-         * Msg.debug(this,"addModule, is main prog, pid_o is "+pid_o); offset = (Long)
-         * somap.get("offset"); //start = (Long) somap.get("prog_start") + offset; start
-         * = (Long) somap.get("prog_start"); end = (Long) somap.get("prog_end");
-         * module_path = prog_path; }else{
-         * Msg.debug(this,"addModule program is not main, search libs for target_base "
-         * +target_base+" num sectoins"+sections.size()); String lib_path = null;
-         * for(Object o : sections) { java.util.HashMap<Object, Object> section =
-         * (java.util.HashMap<Object, Object>) o; lib_path = (String)
-         * section.get("local_path"); if(lib_path == null){ lib_path = (String)
-         * section.get("file"); } String lib_base = (String)
-         * FilenameUtils.getName(lib_path); Msg.debug(this, "check path "+lib_path);
-         * if(target_base.startsWith(lib_base) || lib_base.startsWith(target_base)){
-         * Msg.debug(this,"addModule found lib that matches prog at "+lib_path);
-         * 
-         * start = (Long) section.get("locate"); end = (Long) section.get("end");
-         * module_path = lib_path; break; } } } if(module_path == null){ Msg.error(this,
-         * "Failed to find module for target "+target_path); return; } Msg.debug(this,
-         * "get addr path "+module_path+" start: "+String.format("0x%x",
-         * start)+" end: "+String.format("0x%x", end)); AddressRangeImpl ar = new
-         * AddressRangeImpl(this.addrDyn(start), this.addrDyn(end));
-         * 
-         * DebuggerModelService modelService =
-         * tool.getService(DebuggerModelService.class);
-         * 
-         * DebuggerTraceManagerService traceManager =
-         * tool.getService(DebuggerTraceManagerService.class);
-         * 
-         * DebuggerCoordinates current_manager = traceManager.getCurrent(); Trace
-         * current_trace = traceManager.getCurrentTrace();
-         * 
-         * TraceModuleManager tm = current_manager.getTrace().getModuleManager();
-         * 
-         * TraceRecorder recorder =
-         * modelService.getRecorder(current_manager.getTrace());
-         * 
-         * Long snap = recorder.getSnap(); TraceModule progmod = null; String
-         * module_base = (String) FilenameUtils.getName(module_path);
-         * 
-         * DebuggerStaticMappingService mappings =
-         * tool.getService(DebuggerStaticMappingService.class); AddressSpace dynRam =
-         * current_trace.getBaseAddressFactory().getDefaultAddressSpace(); AddressSpace
-         * statRam = current_program.getAddressFactory().getDefaultAddressSpace(); Long
-         * length = end - start;
-         * 
-         * 
-         * Msg.debug(this, "start transaction"); try (Transaction tid =
-         * currentTrace.openTransaction("Update Module")) {
-         * 
-         * try { //progmod = tm.getLoadedModuleByPath(snap, module_path);
-         * 
-         * //Collection<? extends TraceModule> module_collection =
-         * tm.getModulesByPath(module_path); //Collection<? extends TraceModule>
-         * module_collection = tm.getLoadedModules(snap); Collection<? extends
-         * TraceModule> module_collection = tm.getAllModules(); Msg.debug(this,
-         * "from loaded modules, got "+module_collection.size()); progmod =
-         * module_collection.iterator().next(); Msg.debug(this, "got module"+
-         * progmod.getName()+" targetbase "+target_base);
-         * 
-         * if(progmod == null){ Msg.debug(this,
-         * "Failed to find existing module at path "+module_path+" base "
-         * +module_base+" count "+module_collection.size()+". Add new module."); progmod
-         * = tm.addModule(module_path, target_base, ar, Lifespan.nowOn(0)); }else{
-         * progmod.setRange(ar); }
-         * 
-         * TraceLocation from = new DefaultTraceLocation(current_trace, null,
-         * Lifespan.nowOn(0), dynRam.getAddress(start)); ProgramLocation to = new
-         * ProgramLocation(current_program, statRam.getAddress(start));
-         * DebuggerStaticMappingUtils.addMapping(from, to, length, true);
-         * 
-         * Msg.debug(this, "did addMapping start "+String.format("0x%x",
-         * start)+" length "+length); } catch (Exception e1) { Msg.debug(this,
-         * getExceptString(e1)); } } Msg.debug(this, "done transaction");
-         * 
-         * //Msg.debug(this, "bout to do sections?"); Msg.debug(this,
-         * "parseSO, num sections is "+sections.size()); String path = null; String name
-         * = null; for(Object o : sections) {
-         * 
-         * java.util.HashMap<Object, Object> section = (java.util.HashMap<Object,
-         * Object>) o; start = (Long) section.get("locate"); end = (Long)
-         * section.get("end"); ar = new AddressRangeImpl(this.addrDyn(start),
-         * this.addrDyn(end)); path = (String) section.get("local_path"); if(path ==
-         * null){ path = (String) section.get("file"); } if(path.equals("unknown")) {
-         * continue; } name = FilenameUtils.getName(path); Msg.debug(this,
-         * "section path "+path+" start: "+String.format("0x%x",
-         * start)+" end: "+String.format("0x%x", end)); //Msg.debug(this,
-         * "parseSO add section"); try (Transaction tid =
-         * currentTrace.openTransaction("Add Section")) {
-         * 
-         * try { progmod.addSection(path, name, ar); //Msg.debug(this,
-         * "did add section "+path); } catch (DuplicateNameException e) { // TODO
-         * Auto-generated catch block //e.printStackTrace(); } //Msg.debug(this,
-         * "parseSO back from add section"); } }
-         */
+    class SOInfo{
+        Program current_program;
+        String target_path;
+        String path;
+        long start;
+        long end;
+        protected SOInfo(Program current_program, String target_path, String path, long start, long end){
+            this.current_program = current_program;
+            this.target_path = target_path;
+            this.path = path;
+            this.start = start;
+            this.end = end;
+        }    
     }
+    protected SOInfo getSOInfo(java.util.HashMap<Object, Object> somap) {
+            ArrayList<java.util.HashMap<Object, Object>> sections = null;
+            try {
+                sections = (ArrayList<java.util.HashMap<Object, Object>>) somap.get("sections");
+            } catch (Exception e) {
+                Msg.debug(this, getExceptString(e));
+                return null; // Or handle error appropriately
+            }
+
+            Long start = 0L;
+            Long end = 0L;
+            Program current_program = getProgram();
+            String target_path = current_program.getExecutablePath();
+            String target_base = FilenameUtils.getName(target_path);
+
+            String prog_path = (String) somap.get("prog_local_path");
+            String prog_base = FilenameUtils.getName(prog_path);
+            String module_path = null;
+
+            if (target_base.equals(prog_base)) {
+                String pid_o = (String) somap.get("group_leader");
+                Msg.debug(this, "addModule, is main prog, pid_o is " + pid_o);
+                start = (Long) somap.get("prog_start");
+                end = (Long) somap.get("prog_end");
+                module_path = prog_path;
+            } else {
+                Msg.debug(this, "addModule program is not main, search libs for target_base " + target_base);
+                if (sections != null) {
+                    for (Object o : sections) {
+                        java.util.HashMap<Object, Object> section = (java.util.HashMap<Object, Object>) o;
+                        String lib_path = (String) section.get("local_path");
+                        if (lib_path == null) {
+                            lib_path = (String) section.get("file");
+                        }
+                        if (lib_path != null) {
+                            String lib_base = FilenameUtils.getName(lib_path);
+                            Msg.debug(this, "check path " + lib_path);
+                            if (target_base.startsWith(lib_base) || lib_base.startsWith(target_base)) {
+                                Msg.debug(this, "addModule found lib that matches prog at " + lib_path);
+                                start = (Long) section.get("locate");
+                                end = (Long) section.get("end");
+                                module_path = lib_path;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            SOInfo retval = new SOInfo(current_program, target_path, module_path, start, end);
+            return retval;
+    }
+    protected void addModule(java.util.HashMap<Object, Object> somap) {
+        Msg.debug(this, "HERE");
+        SOInfo so_info = getSOInfo(somap);
+        if (so_info.path == null) {
+            Msg.error(this, "Failed to find module for target " + so_info.target_path);
+            return;
+        }else{
+            DebuggerTraceManagerService traceManager = tool.getService(DebuggerTraceManagerService.class);
+            if (traceManager == null) {
+                Msg.error(this, "DebuggerTraceManagerService not found");
+                return;
+            }
+
+            Trace currentTrace = traceManager.getCurrentTrace();
+            if (currentTrace == null) {
+                Msg.error(this, "No current trace available");
+                return;
+            }
+            long snap = traceManager.getCurrentSnap();
+
+            // Setup AddressFactory and addresses
+            AddressFactory addrFactory = currentTrace.getBaseAddressFactory();
+            Address minAddr = addrFactory.getDefaultAddressSpace().getAddress(so_info.start);
+            Address maxAddr = addrFactory.getDefaultAddressSpace().getAddress(so_info.end);
+            AddressRange range = new AddressRangeImpl(minAddr, maxAddr);
+            Lifespan lifespan = Lifespan.nowOn(snap);
+
+            TraceModuleManager moduleManager = currentTrace.getModuleManager();
+            String moduleName = FilenameUtils.getName(so_info.path).strip();
+
+            Msg.debug(this, "Updating module " + moduleName + " at path " + so_info.path + " with range " + range);
+            String full_path = null;
+            Collection <TraceModule> modules = (Collection<TraceModule>) moduleManager.getAllModules();
+            Msg.debug(this, "wtf num modules "+modules.size());
+            TraceModule my_module = null;
+            for(TraceModule tm : modules) {
+                String this_path = tm.getName(snap);
+                String this_name = FilenameUtils.getName(this_path).strip();
+                Msg.debug(this,  "check module path "+this_path+" starts with "+so_info.path);
+                Msg.debug(this,  "check module path "+this_name+" starts with "+moduleName);
+                if(moduleName.startsWith(this_name) || this_name.startsWith(moduleName)){
+                    Msg.debug(this,  "found module path "+this_path);
+                    my_module = tm;
+                    Msg.debug(this, "base of module is "+tm.getBase(snap));
+                    break;
+                }
+            }
+            if(my_module != null){
+                try (Transaction tid = currentTrace.openTransaction("Add/Update " + moduleName + " Module")) {
+                    Msg.debug(this, "Module found. Updating range for: " + moduleName);
+                    my_module.setRange(snap, range);
+                    //my_module.setRange(lifespan, range);
+                    Msg.debug(this, "Module range now "+my_module.getRange(snap));
+                    // Add static mapping
+                    DebuggerStaticMappingService mappingService = tool.getService(DebuggerStaticMappingService.class);
+                    if (mappingService != null) {
+                        Address staticAddr = so_info.current_program.getImageBase();
+                        ProgramLocation to = new ProgramLocation(so_info.current_program, staticAddr);
+                        TraceLocation from = new DefaultTraceLocation(currentTrace, null, lifespan, minAddr);
+                        long length = so_info.end - so_info.start + 1;
+                        mappingService.addMapping(from, to, length, false);
+                        Msg.debug(this, "Added static mapping for " + moduleName);
+                    } else {
+                        Msg.error(this, "DebuggerStaticMappingService not available.");
+                    }
+
+                    tid.commit();
+                } catch (Exception e) {
+                    Msg.error(this, "Transaction failed for module update: " + getExceptString(e));
+                }
+            }else{
+                Msg.error(this, "Module not found "+moduleName);
+            }
+        }
+    }
+
 
     public void doMapping() {
         /**
@@ -779,6 +842,27 @@ public class RESimUtilsPlugin extends Plugin {
          * Cursor and register actions for right-click menu popups. Also see actions
          * defined in bookmarks, e.g., revTaint functions that generate bookmarks.
          */
+         ToolOptions options = tool.getOptions("Key Bindings");
+         List<String> optionNames = options.getLeafOptionNames(); // Returns leaf option keys
+         for (String name : optionNames) {
+             KeyStroke ks = options.getKeyStroke(name, null);
+             Msg.info(this, name + " -> " + (ks != null ? ks.toString() : "None"));
+             //if(name.contains("Step Into")){
+             if(name.contains("Step Into") || name.contains("Step Over")){
+                 Msg.debug(this, "remove by name "+name);
+                 options.setKeyStroke(name, null);
+                 //options.removeOption(name);
+             }else if(ks != null){
+                 String ks_string = ks.toString();
+                 if(ks_string.contains("F8") || ks_string.contains("F10")){
+                     //options.setKeyStroke(name, null);
+                     Msg.debug(this, "remove by f key in kstring "+ks_string+"name "+name);
+                     options.setKeyStroke(name, null);
+                     //options.removeOption(name);
+                 }
+             }
+         }
+
         tool.setMenuGroup(new String[] { RESIM_MENU_PULLRIGHT }, RESIM_MENU_SUBGROUP, RESIM_SUBGROUP_MIDDLE);
         RESimCursorAction revToCursorAction = new RESimCursorAction("Rev to cursor", "revToAddr", this, null, true);
         revToCursorAction.setKeyBindingData(
@@ -832,6 +916,12 @@ public class RESimUtilsPlugin extends Plugin {
                 .menuPath(RESimUtilsPlugin.MENU_RESIM, "Refresh", "&Resync with server")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Refresh").onAction(c -> refreshClient(true))
                 .buildAndInstall(tool);
+        new ActionBuilder("Step into", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Run to", "&step into")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Run to").onAction(c -> doRESimRefresh("stepInto()"))
+                .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0)).buildAndInstall(tool);
+        new ActionBuilder("Step over", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Run to", "&step over")
+                .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Run to").onAction(c -> doRESimRefresh("stepOver()"))
+                .keyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F10, 0)).buildAndInstall(tool);
         new ActionBuilder("Run to user space", getName()).menuPath(RESimUtilsPlugin.MENU_RESIM, "Run to", "&user space")
                 .menuGroup(RESimUtilsPlugin.MENU_RESIM, "Run to").onAction(c -> doRESimRefresh("runToUserSpace()"))
                 .buildAndInstall(tool);
@@ -930,26 +1020,31 @@ public class RESimUtilsPlugin extends Plugin {
 
     @Override
     public void processEvent(PluginEvent event) {
+        // TBD this is messed up
         super.processEvent(event);
         if (event instanceof TraceActivatedPluginEvent) {
-            Msg.debug(this, "is TraceActivatedPluginEvent");
+            Msg.debug(this, "is TraceActivatedPluginEvent didMapping "+ didMapping);
             getGDBExecuteMethod();
             getCurrentTrace();
             if (connected()) {
-                Msg.debug(this, "is TraceActivatedPluginEvent, refresh client");
+                Msg.debug(this, "is TraceActivatedPluginEvent");
                 if(program == null){
                     program = getProgram();
                 }
-                refreshClient(true);
-                getLoadOffset();
+                if (!didMapping && impl != false) {
+                    doMapping();
+                    refreshClient(true);
+                    getLoadOffset();
+                }
             }
         } else if (event instanceof TraceSelectionPluginEvent) {
-            Msg.debug(this, "is traceSelection");
+            Msg.debug(this, "is TraceSelectionPluginEvent didMapping "+didMapping+" imp "+impl);
             if (program == null) {
                 Msg.debug(this, "program is null, call getProgram");
                 program = getProgram();
             }
             if (!didMapping && impl != false) {
+                Msg.debug(this, "call doRest and doMapping");
                 // Do mapping as callback here, otherwise, mapping is attempted
                 // before ghidra debugger settles out.
                 doRest();
@@ -962,12 +1057,7 @@ public class RESimUtilsPlugin extends Plugin {
             // refreshRegisters();
         } else if (event instanceof TraceClosedPluginEvent) {
             Msg.debug(this, "is trace closed event");
-            program = getProgram();
-            didMapping = false;
-            doMapping();
-            tool.getService(DebuggerListingService.class)
-                    .setTrackingSpec(PCByRegisterLocationTrackingSpec.INSTANCE);
-            
+            // TBD until we know it is a trace we care about
 
         } else {
             Msg.debug(this, "plugin event is " + event.getEventName());
@@ -979,15 +1069,15 @@ public class RESimUtilsPlugin extends Plugin {
             return targetService;
     }
     public Long getRegValue(String reg){
-        Long retval = (Long) null;
+        Long retval = 0L;
         Msg.debug(this, "getRegValue for reg "+reg);
         if(latest_register_frame != null){
             for (RegisterValue reg_value : latest_register_frame) {
                 Register register = reg_value.getRegister();
                 Msg.debug(this, "check against "+register.getName());
                 if(register.getName().equals(reg)){
-                    Msg.debug(this, "getRegValue found for reg "+reg);
                     retval = reg_value.getUnsignedValue().longValue();
+                    Msg.debug(this, "getRegValue found for reg "+reg+" value "+Long.toHexString(retval));
                     break;
                 }
             }
@@ -1011,9 +1101,9 @@ public class RESimUtilsPlugin extends Plugin {
         //}
         Msg.debug(this, "call readRegisters len of regs is "+ regs.size());
         List<RegisterValue> value_list = readRegisters(platform, thread, frame, snap, regs);
-        for (RegisterValue reg_value : value_list) {
-                Msg.debug(this, "readCurrentFrame value is "+reg_value);
-        }
+        //for (RegisterValue reg_value : value_list) {
+        //        Msg.debug(this, "readCurrentFrame value is "+reg_value);
+        //}
         Msg.debug(this, "back from readRegisters");
         latest_register_frame = value_list;
         //Msg.debug(this, "doReadCurrentFrame call to readCurrentFrame got "+latest_register_frame.toString());
@@ -1261,7 +1351,7 @@ public class RESimUtilsPlugin extends Plugin {
     }
 
     protected void rebase(long offset) {
-        Msg.info(this, "do rebase");
+        Msg.info(this, "do rebase offset "+Long.toHexString(offset));
         Address base_addr = this.addr(offset);
         int t = program.startTransaction("rebase");
 
@@ -1937,7 +2027,15 @@ public class RESimUtilsPlugin extends Plugin {
         long preval = 0;
         for(Object o : list){          
             Msg.debug(this, "getMemReference preval "+preval+" sum "+sum);
-            if(!in_brackets){
+            if(list.size() == 1 && o instanceof Register){
+                Register r = (Register) o;
+                String rname = r.getName();
+                if(rname != null){
+                    preval = getRegValue(rname);
+                    retval = addr(tool, preval);
+                    Msg.debug(this, "getMemReference only a register "+r+" got value "+preval);
+                }
+            }else if(!in_brackets){
                 if(o instanceof Character){
                     if((Character) o == '['){
                         in_brackets = true;
