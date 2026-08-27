@@ -430,18 +430,9 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         Msg.debug(this, "RESimConsoleProvider createActions begin");
         clearAction.setDescription("Clear Console");
         revStepIntoAction = new RevStepIntoAction(resimUtils);
-        //revStepIntoAction.setKeyBindingData(new KeyBindingData(
-        //        KeyStroke.getKeyStroke(KeyEvent.VK_F9, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
         revStepOverAction = new RevStepOverAction(resimUtils);
-        //revStepOverAction.setKeyBindingData(new KeyBindingData(
-        //        KeyStroke.getKeyStroke(KeyEvent.VK_F10, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
-
         stepIntoAction = new StepIntoAction(resimUtils);
-        stepIntoAction.setKeyBindingData(new KeyBindingData(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F11, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
         stepOverAction = new StepOverAction(resimUtils);
-        stepOverAction.setKeyBindingData(new KeyBindingData(
-                KeyStroke.getKeyStroke(KeyEvent.VK_F12, DockingUtils.CONTROL_KEY_MODIFIER_MASK)));
 // ACTIONS - auto generated
         Msg.debug(this, "RESimConsoleProvider createActions did bindings");
         clearAction.setToolBarData(new ToolBarData(ResourceManager.loadImage(CLEAR_GIF), null));
