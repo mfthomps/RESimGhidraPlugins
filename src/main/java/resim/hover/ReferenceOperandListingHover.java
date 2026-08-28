@@ -38,19 +38,20 @@ import ghidra.trace.model.Trace;
 import ghidra.util.HTMLUtilities;
 import ghidra.util.Msg;
 import resim.utils.RESimUtilsPlugin;
+import resim.libs.RESimLibs;
 
 public class ReferenceOperandListingHover extends AbstractConfigurableHover 
-		implements ListingHoverService {
+        implements ListingHoverService {
     // TBD determine reasonable priority
-	private static final int PRIORITY = 101;
-	private static final String NAME = "Referencee Operand Display";
-	private static final String DESCRIPTION =
-		"Display content of referenced memory.";
-	private Trace currentTrace;
-	private RESimUtilsPlugin utilsPlugin = null;
-	public ReferenceOperandListingHover(PluginTool tool) {
-		super(tool, PRIORITY);
-	}
+    private static final int PRIORITY = 101;
+    private static final String NAME = "Referencee Operand Display";
+    private static final String DESCRIPTION =
+        "Display content of referenced memory.";
+    private Trace currentTrace;
+    private RESimUtilsPlugin utilsPlugin = null;
+    public ReferenceOperandListingHover(PluginTool tool) {
+        super(tool, PRIORITY);
+    }
 
     public Trace getCurrentTrace() {
         DebuggerTraceManagerService traces =
@@ -78,78 +79,81 @@ public class ReferenceOperandListingHover extends AbstractConfigurableHover
         return currentTrace;
     }
 
-	@Override
-	protected String getName() {
-		return NAME;
-	}
+    @Override
+    protected String getName() {
+        return NAME;
+    }
 
-	@Override
-	protected String getDescription() {
-		return DESCRIPTION;
-	}
+    @Override
+    protected String getDescription() {
+        return DESCRIPTION;
+    }
 
-	@Override
-	protected String getOptionsCategory() {
-		return GhidraOptions.CATEGORY_BROWSER_POPUPS;
-	}
+    @Override
+    protected String getOptionsCategory() {
+        return GhidraOptions.CATEGORY_BROWSER_POPUPS;
+    }
 
-	@Override
-	public JComponent getHoverComponent(Program program, ProgramLocation programLocation,
-			FieldLocation fieldLocation, Field field) {
-		if (!enabled || programLocation == null) {
-			return null;
-		}
+    @Override
+    public JComponent getHoverComponent(Program program, ProgramLocation programLocation,
+            FieldLocation fieldLocation, Field field) {
+        if (!enabled || programLocation == null) {
+            return null;
+        }
 
-		if (!(programLocation instanceof OperandFieldLocation)) {
-			return null;
-		}
+        if (!(programLocation instanceof OperandFieldLocation)) {
+            return null;
+        }
                 Msg.debug(this, "getHoverComponent ok?");
-		Address a = programLocation.getAddress();
-		Instruction instruction = program.getListing().getInstructionAt(a);
-		if (instruction == null) {
-			return null;
-		}
-		currentTrace = getCurrentTrace();
-		if(currentTrace == null) {
-		    return null;
-		}
-		OperandFieldLocation operandLocation = (OperandFieldLocation) programLocation;
-		Msg.debug(this,  "hover, programLocation is "+operandLocation.toString());
+        Address a = programLocation.getAddress();
+        Instruction instruction = program.getListing().getInstructionAt(a);
+        if (instruction == null) {
+            return null;
+        }
+        currentTrace = getCurrentTrace();
+        if(currentTrace == null) {
+            return null;
+        }
+        OperandFieldLocation operandLocation = (OperandFieldLocation) programLocation;
+        Msg.debug(this,  "hover, programLocation is "+operandLocation.toString());
                 if(utilsPlugin == null){
                     utilsPlugin = RESimUtilsPlugin.getRESimUtils(tool);
                 }
-		Address memReference  = utilsPlugin.getMemReference(operandLocation, instruction);
-		if (memReference == null) {
-		        Msg.debug(this,  "hover, memReference is null");
-			return null;
-		}
-		
-		String cmd = "x "+memReference.getOffset();
-		Msg.debug(this,  "hover, gdb cmd is "+cmd);
-		if(utilsPlugin == null) {
-		    utilsPlugin = RESimUtilsPlugin.getRESimUtils(tool);
-		}
-		CompletableFuture<String> gdbret = utilsPlugin.doSimics(cmd);
+        Address memReference  = utilsPlugin.getMemReference(operandLocation, instruction);
+        if (memReference == null) {
+                Msg.debug(this,  "hover, memReference is null");
+            return null;
+        }
+        
+        String cmd = "x "+memReference.getOffset();
+        Msg.debug(this,  "hover, gdb cmd is "+cmd);
+        if(utilsPlugin == null) {
+            utilsPlugin = RESimUtilsPlugin.getRESimUtils(tool);
+        }
+        CompletableFuture<String> gdbret = utilsPlugin.doSimics(cmd);
 
-		if(gdbret == null) {
-		    return null;
-		}
-		
-		String rval = null;
-		try {
+        if(gdbret == null) {
+            return null;
+        }
+        
+        String rval = null;
+        try {
             rval = gdbret.get();
         } catch (InterruptedException | ExecutionException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-		Msg.debug(this,"gdb returned "+rval);
-		String formatted =
-			formatString(instruction.getProgram(), rval);
-		Msg.debug(this, "hovering memReference "+memReference.toString());
-	
-		return createTooltipComponent(formatted);
-	}
-	protected String formatString(Program program, String value) {
+        rval = RESimLibs.exceptLastLine(rval);
+        if(rval.contains("have no translation")){
+            return null;
+        }else{
+            Msg.debug(this,"gdb returned "+rval);
+            String formatted = formatString(instruction.getProgram(), rval);
+            Msg.debug(this, "hovering memReference "+memReference.toString());
+            return createTooltipComponent(formatted);
+        } 
+    }
+    protected String formatString(Program program, String value) {
            StringBuilder sb = new StringBuilder(HTMLUtilities.HTML);
            sb.append("<hr>");
            sb.append("<table>");

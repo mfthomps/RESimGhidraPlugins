@@ -19,6 +19,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.PrintWriter;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -595,9 +596,10 @@ public class RESimConsoleProvider extends ComponentProviderAdapter
         currentAddress = address;
     }
     @Override
-    public void refresh() {
+    public CompletableFuture refresh() {
 	// TODO Auto-generated method stub
-	
+        return CompletableFuture.completedFuture("noting to do");
+
     }
     public void coordinatesActivated(DebuggerCoordinates coordinates) {
         if (sameCoordinates(current, coordinates)) {

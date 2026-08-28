@@ -21,6 +21,7 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -399,7 +400,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         add(wmr); 
     }
     @SuppressWarnings("unchecked")
-    public void refresh() {
+    public CompletableFuture<Void> refresh() {
         Msg.debug(this, "refresh watchmarks");
         // Step 1: Call refreshList() to get its Future.
         // This starts the process of populating the table.
@@ -408,7 +409,7 @@ public class RESimWatchMarksProvider extends ComponentProviderAdapter implements
         // Step 2: Use that Future to chain the call to latestMark().
         // The 'thenRun' method ensures that latestMark() is only called
         // after the refreshList() operation is fully complete.
-        listReadyFuture.thenRun(() -> {
+        return listReadyFuture.thenRun(() -> {
             latestMark();
         }).exceptionally(throwable -> {
             // Handle any exceptions from the async operations

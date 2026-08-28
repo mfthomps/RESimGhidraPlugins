@@ -20,6 +20,7 @@ import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.*;
 
 import javax.swing.*;
@@ -434,7 +435,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
          add(wmr); 
     }
     @SuppressWarnings("unchecked")
-    public void refresh(){
+    public CompletableFuture<Void> refresh(){
         Msg.debug(this, "refresh bookmarks");
         if(resimUtils == null) {
             Msg.debug(this,"call to get RESimUtils");
@@ -443,13 +444,13 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         }
         if(resimUtils == null) {
             Msg.error(this,  "Cannot refresh, no RESimUtils");
-            return;
+            return CompletableFuture.failedFuture(new IllegalStateException("resimUtils was null");
         }
 
         clear();
         String cmd = "getBookmarksJson()";
         Msg.debug(this,  "refresh about to call resimUtils");
-        resimUtils.doRESim(cmd).thenApply(book_string -> {
+        return resimUtils.doRESim(cmd).thenApply(book_string -> {
             if(book_string == null) {
                 Msg.error(this, "Failed to get bookMarks json from RESim");
                 return null;
@@ -468,7 +469,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
             actionRefresh.setEnabled(true);
             actionAdd.setEnabled(true);
             actionRefresh.setEnabled(true);
-            return book_string;
+            return null;
         });
 
     }

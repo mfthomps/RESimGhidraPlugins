@@ -107,7 +107,7 @@ public class RESimRegAction extends ListingContextAction {
         if(full_cmd != null) {
             Msg.debug(this, "In actionPerformed will do cmd: "+full_cmd);
             try {
-                CompletableFuture<String> refresh_future = plugin.doRESimRefresh(full_cmd);
+                CompletableFuture<Void> refresh_future = plugin.doRESimRefresh(full_cmd);
                 refresh_future.thenApply(result -> {
                     Msg.debug(this, "actionPerformed, did cmd, resim says "+result);
                     //plugin.refreshClient(true);

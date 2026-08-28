@@ -24,6 +24,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.*;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.*;
 
 import javax.swing.*;
@@ -373,32 +374,37 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         reStackTableModel.clear();
     }
     public void add(RESimStackRow row) {
+        Msg.debug(this, "adding a row");
         reStackTableModel.add(row);
     }
-        public void add(HashMap<Object, Object> entry, int index){
-            String instruct = (String) entry.get("instruct");
-            Msg.debug(this, "adding instruct"+instruct);
-            String fun = (String) entry.get("fun_of_ip");
-            String fname = (String) entry.get("fname");
-            String basename = FileNameUtils.getBaseName(fname);
-            
-            long ip = (long) entry.get("ip");
-            Address ip_addr = resimUtils.addr(ip);
-             RESimStackRow wmr = new RESimStackRow(this, index, instruct, fun, basename, ip_addr);
-             add(wmr); 
-        }
+    public void add(HashMap<Object, Object> entry, int index){
+        String instruct = (String) entry.get("instruct");
+        Msg.debug(this, "adding instruct"+instruct);
+        String fun = (String) entry.get("fun_of_ip");
+        String fname = (String) entry.get("fname");
+        String basename = FileNameUtils.getBaseName(fname);
+        
+        long ip = (long) entry.get("ip");
+        Address ip_addr = resimUtils.addr(ip);
+        RESimStackRow wmr = new RESimStackRow(this, index, instruct, fun, basename, ip_addr);
+        add(wmr); 
+        Msg.debug(this, "back from add(wmr)");
+    }
     @SuppressWarnings("unchecked")
-    public void refresh(){
+    public CompletableFuture<Void> refresh(){
         Msg.info(this,  "refresh");
         if(resimUtils == null) {
             Msg.error(this,  "refresh failed, resimUtilsis null");
-            return;
+            return CompletableFuture.failedFuture(new IllegalStateException("resimUtils was null");
         }
         clear();
         String cmd = "getStackTrace()";
         Msg.info(this, "cmd is "+cmd);
-
-        resimUtils.doRESim(cmd).thenApply(stack_string ->{
+        return resimUtils.doRESim(cmd).thenAccept(stack_string -> {
+            if (stack_string == null) {
+                Msg.error(this, "Failed to get stack string json from RESim");
+                return; // Stop processing
+            }
             Object stack_json = Json.getJson(stack_string);
             Msg.info(this, stack_string);
             java.util.List<Object> reStack = (java.util.ArrayList<Object>) stack_json;
@@ -406,11 +412,21 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
             for(Object o : reStack){
                 HashMap<Object, Object> entry = (HashMap<Object, Object>) o;
                 add(entry, index);
+                Msg.info(this, "back from add");
                 index++;
             }
+            Msg.info(this, "done with loop");
             actionRefresh.setEnabled(true);
-            return stack_string;
+            Msg.info(this, "done setEnabled");
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during stack refresh:\n" + sw.toString());
+            return null;
         });
+
     }
     
 }

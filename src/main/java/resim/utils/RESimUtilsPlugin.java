@@ -171,9 +171,6 @@ import com.google.gson.stream.JsonWriter;
 public class RESimUtilsPlugin extends Plugin {
     private PluginTool tool;
     private Program program;
-    // private GdbManagerImpl impl;
-    private boolean impl = false;
-    // GdbModelImpl model;
 
     public final static String RESIM_MENU_SUBGROUP = "RESim";
     public final static String RESIM_MENU_PULLRIGHT = "RESim";
@@ -196,7 +193,7 @@ public class RESimUtilsPlugin extends Plugin {
     private List<RegisterValue> latest_register_frame = null;
     private long load_offset = 0;
     private String load_string = null;
-    protected List<String> x32_regs = List.of("EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI", "ES", "CS", "SS", "DS", "FS", "GS", "FS_OFFSET", "GS_OFFSET"); 
+    protected List<String> x32_regs = List.of("EIP", "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI", "ES", "CS", "SS", "DS", "FS", "GS", "FS_OFFSET", "GS_OFFSET"); 
 
     /**
      * Construct the RESimUtils plugin.
@@ -207,7 +204,6 @@ public class RESimUtilsPlugin extends Plugin {
         super(tool);
         this.tool = tool;
         this.program = null;
-        // this.impl = null;
         Msg.debug(this, "in resimutils plugin");
         refreshProviders = new ArrayList<RESimProvider>();
         initProviders = new ArrayList<RESimProvider>();
@@ -263,26 +259,60 @@ public class RESimUtilsPlugin extends Plugin {
         }
         return gdb_execute_method;
     }
+    public CompletableFuture<Void> refreshProviders() {
+        // Start with a pre-completed future to act as the initial link in our chain.
+        java.util.concurrent.CompletableFuture<Void> serialChain = 
+            java.util.concurrent.CompletableFuture.completedFuture(null);
+
+        for (RESimProvider provider : refreshProviders) {
+            Msg.debug(this, "Chaining refresh for provider: " + provider.getClass().getSimpleName());
+            
+            // thenCompose waits for the previous future in the chain to complete,
+            // then executes the next provider.refresh() and adopts its future.
+            // The lambda 'v -> provider.refresh()' ensures the refresh() method is only called
+            // after the previous one finishes.
+            serialChain = serialChain.thenCompose(v -> provider.refresh());
+        }
+
+        // (Optional but Recommended) Add a final block to handle any exception
+        // that might occur anywhere in the chain.
+        serialChain.exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during provider refresh chain:\n" + sw.toString());
+            return null;
+        });
+        return serialChain;
+    }
 
     /**
      * Refresh the gdb client state values.
      * 
      */
-    public void refreshClient(boolean from_resim) {
+    public CompletableFuture<Void> refreshClient(boolean from_resim) {
+        CompletableFuture retval = null;
         Msg.debug(this, "refreshClient from_resim? " + from_resim);
         if(from_resim){
             doGdbCmd("maint flush register-cache");
             Msg.debug(this, "refreshClient did flush register-cache");
         }
-        for(RESimProvider provider : refreshProviders) { 
-             Msg.debug(this, "refreshClient refresh a provider"); 
-             provider.refresh(); 
-        }
+        CompletableFuture<Void> provider_future = refreshProviders();
         if(from_resim) {
             Msg.debug(this, "refreshClient call doRefresh");
-            doRefresh();
+            return provider_future.thenRun(() -> {
+                doRefresh();
+            }).exceptionally(throwable -> {
+                // Handle any exceptions from the async operations
+                java.io.StringWriter sw = new java.io.StringWriter();
+                java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+                throwable.printStackTrace(pw);
+                Msg.error(this, "Caught async error during provider refresh:\n" + sw.toString());
+                return null;
+            });
         }
-        return;
+        return provider_future;
     }
 
     public Address addr(long addr) {
@@ -341,7 +371,7 @@ public class RESimUtilsPlugin extends Plugin {
      
     }
 
-    public CompletableFuture<String> doRESimRefresh(String cmd) {
+    public CompletableFuture<Void> doRESimRefresh(String cmd) {
         /**
          * Use the gdb monitor to send a command to RESim and refresh the client when
          * done.
@@ -351,26 +381,38 @@ public class RESimUtilsPlugin extends Plugin {
          */
         Msg.debug(this, "doRESimRefresh do cmd: " + cmd);
         CompletableFuture<String> cmdfuture = doRESim(cmd);
-        String result = null;
-        try {
-            result = (String) cmdfuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            // TODO Auto-generated catch block
-            Msg.error(this, getExceptString(e));
+        CompletableFuture<Void> clientfuture = cmdfuture.thenRun(() -> {
+            Msg.debug(this, "now call refreshClientWhenStopped");
+            refreshClientWhenStopped();
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during call to refreshClientWhenStopped:\n" + sw.toString());
             return null;
-        }
-        Msg.debug(this, "back from cmd get, gotXXXXXXX " + result);
-        //try {
-        //    Thread.sleep(1000);
-        //} catch (InterruptedException e) {
-        //    // TODO Auto-generated catch block
-        //    e.printStackTrace();
-        //}
-        Msg.debug(this, "Now call getEIPWheStopped");
-        CompletableFuture<String> retval = doRESim("getEIPWhenStopped()", true);
-        Msg.debug(this, "back from getEIPWhenStopped");
-        //refreshClient(true);
-        return retval;
+        });
+        CompletableFuture<Void> cachefuture =  clientfuture.thenRun(() -> {
+            Msg.debug(this, "now call flush register cache");
+            doGdbCmd("maint flush register-cache");
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during call to cache refresh:\n" + sw.toString());
+            return null;
+        });
+        return cachefuture.thenRun(() -> {
+            doRefresh();
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during call to doRefresh:\n" + sw.toString());
+            return null;
+        });
     }
     public CompletableFuture<String> doSimics(String cmd) {
         /**
@@ -383,23 +425,44 @@ public class RESimUtilsPlugin extends Plugin {
         return doGdbCmd("monitor " + cmd);
     }
     public CompletableFuture<String> doRESim(String cmd) {
-        return doRESim(cmd, false);
-    }
-    public CompletableFuture<String> doRESim(String cmd, boolean refresh) {
         /**
          * Use the gdb monitor to send a command to RESim
          * 
          * @param cmd Command to execute
          * @return The response from RESim
          */
-        Msg.debug(this, "in doRESim for cmd "+cmd+" refresh "+refresh);
+        Msg.debug(this, "in doRESim for cmd "+cmd);
         String cmd_param = "monitor @cgc." + cmd;
-        return doGdbCmd(cmd_param, refresh);
+        return doGdbCmd(cmd_param);
+    }
+    public CompletableFuture<String> refreshClientWhenStopped() {
+        CompletableFuture<String> retval = null;
+        boolean done = false;
+        int count = 0;
+        while(!done){
+            Msg.debug(this, "Now call getEIPWheStopped");
+            retval = doRESim("getEIPWhenStopped()");
+            String status = null;
+            try {
+                status = retval.get();
+            } catch (InterruptedException | ExecutionException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            Msg.debug(this, "when stopped status "+status);
+            if(!status.startsWith("not stopped")){
+                done = true;
+            }
+            count += 1;
+            if(count > 40){
+                Msg.error(this, "failed to get eip when stopped, to many tries");
+                break;
+            } 
+        }
+        Msg.debug(this, "retval "+retval);
+        return retval;
     }
     public CompletableFuture<String> doGdbCmd(String dbg_cmd) {
-        return doGdbCmd(dbg_cmd, false);
-    }
-    public CompletableFuture<String> doGdbCmd(String dbg_cmd, boolean refresh) {
         /**
          * Send a command to the GDB console.
          * 
@@ -410,57 +473,35 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.error(this, "gdb_execute_method is null");
             return null;
         }
-        Msg.debug(this, "in doGdbCmd for cmd "+dbg_cmd+" refresh: "+refresh);
+        Msg.debug(this, "in doGdbCmd for cmd "+dbg_cmd);
         return CompletableFuture.supplyAsync(() -> {
             RemoteAsyncResult async_result;
             String result = null;
-            boolean done = false;
-            int loop_count = 0;
-            while(!done){
-                loop_count += 1;
-                async_result = gdb_execute_method.invokeAsync(Map.of("cmd", dbg_cmd, "to_string", true));
-    
-                try {
-                    result = (String) async_result.get();
-                    Msg.debug(this, "did async_result.get and got len "+result.length()+" "+result.substring(0,Math.min(result.length(), 20)));
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    Msg.error(this, getExceptString(e));
-                    Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
-                } catch (ExecutionException e) {
-                    // TODO Auto-generated catch block
-                    Msg.debug(this, "doGDBCmd ExecutionException,  where from?");
-                    Msg.error(this, getExceptString(e));
-                    Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
-                }
-                if(refresh){
-                    Msg.debug(this, "doGDBCmd finished command, refresh was true async_result is "+async_result.toString());
-                    if(result != null){
-                        if(!result.startsWith("not stopped")){
-                            done = true;
-                            Msg.debug(this, "doGDBCmd think we are ready to refresh result "+result);
-                            refreshClient(true);
-                        }else{
-                            Msg.debug(this, "doGDBCmd not done, sleep 1");
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e) {
-                               // TODO Auto-generated catch block
-                               e.printStackTrace();
-                            }
-                        } 
-                   }else{
-                       Msg.debug(this, "doGDBCmd refresh and result is null?");
-                   }
-                }else{
-                    done = true;
-                }
-                if(loop_count > 40){
-                    break;
-                }
+            async_result = gdb_execute_method.invokeAsync(Map.of("cmd", dbg_cmd, "to_string", true));
+            try {
+                result = (String) async_result.get();
+                Msg.debug(this, "did async_result.get and got len "+result.length()+" "+result.substring(0,Math.min(result.length(), 20)));
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                Msg.error(this, getExceptString(e));
+                Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
+            } catch (ExecutionException e) {
+                // TODO Auto-generated catch block
+                Msg.debug(this, "doGDBCmd ExecutionException,  where from?");
+                Msg.error(this, getExceptString(e));
+                Msg.error(this, org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e));
             }
+            Msg.debug(this, "return result "+result);
             return result;
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during doMapping:\n" + sw.toString());
+            return null;
         });
+        
     }
 
     /**
@@ -614,7 +655,7 @@ public class RESimUtilsPlugin extends Plugin {
             Msg.debug(this, "Updating module " + moduleName + " at path " + so_info.path + " with range " + range);
             String full_path = null;
             Collection <TraceModule> modules = (Collection<TraceModule>) moduleManager.getAllModules();
-            Msg.debug(this, "wtf num modules "+modules.size());
+            Msg.debug(this, "num modules "+modules.size());
             TraceModule my_module = null;
             for(TraceModule tm : modules) {
                 String this_path = tm.getName(snap);
@@ -658,14 +699,14 @@ public class RESimUtilsPlugin extends Plugin {
     }
 
 
-    public void doMapping() {
+    public CompletableFuture<String> doMapping() {
         /**
          * Get program information from RESim and use it to map static/dynamic listings.
          *
          */
         Msg.debug(this, "in doMapping");
         String cmd = "getSOMap()";
-        doRESim(cmd).thenApply(so_json -> {
+        return doRESim(cmd).thenApply(so_json -> {
             if (so_json != null) {
                 this.parseSO(so_json);
                 didMapping = true;
@@ -673,7 +714,15 @@ public class RESimUtilsPlugin extends Plugin {
                 Msg.error(this, "Failed to getSOMap");
             }
             return so_json;
+        }).exceptionally(throwable -> {
+            // Handle any exceptions from the async operations
+            java.io.StringWriter sw = new java.io.StringWriter();
+            java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+            throwable.printStackTrace(pw);
+            Msg.error(this, "Caught async error during doMapping:\n" + sw.toString());
+            return null;
         });
+
     }
 
     public void doThreads() {
@@ -846,19 +895,16 @@ public class RESimUtilsPlugin extends Plugin {
          List<String> optionNames = options.getLeafOptionNames(); // Returns leaf option keys
          for (String name : optionNames) {
              KeyStroke ks = options.getKeyStroke(name, null);
-             Msg.info(this, name + " -> " + (ks != null ? ks.toString() : "None"));
-             //if(name.contains("Step Into")){
+             //Msg.info(this, name + " -> " + (ks != null ? ks.toString() : "None"));
              if(name.contains("Step Into") || name.contains("Step Over")){
                  Msg.debug(this, "remove by name "+name);
                  options.setKeyStroke(name, null);
-                 //options.removeOption(name);
              }else if(ks != null){
                  String ks_string = ks.toString();
                  if(ks_string.contains("F8") || ks_string.contains("F10")){
                      //options.setKeyStroke(name, null);
                      Msg.debug(this, "remove by f key in kstring "+ks_string+"name "+name);
                      options.setKeyStroke(name, null);
-                     //options.removeOption(name);
                  }
              }
          }
@@ -959,26 +1005,16 @@ public class RESimUtilsPlugin extends Plugin {
         /**
          * Register a RESim plugin to be refreshed each time program state changes.
          */
-        if (impl == false) {
-            Msg.debug(this, "register plugin for refresh");
-            refreshProviders.add(provider);
-        } else {
-            Msg.debug(this, "registerRefresh Already connected, just refresh the plugin.");
-            provider.refresh();
-        }
+        Msg.debug(this, "register plugin for refresh");
+        refreshProviders.add(provider);
     }
 
     public void registerInit(RESimProvider provider) {
         /**
          * Register a RESim plugin to be initialized when the debugger is attached.
          */
-        if (impl == false) {
-            Msg.debug(this, "register plugin for init ");
-            initProviders.add(provider);
-        } else {
-            Msg.debug(this, "registerInit Already connected, just refresh the plugin.");
-            provider.refresh();
-        }
+        Msg.debug(this, "register plugin for init ");
+        initProviders.add(provider);
     }
 
     private void initOtherPlugins() {
@@ -1023,38 +1059,31 @@ public class RESimUtilsPlugin extends Plugin {
         // TBD this is messed up
         super.processEvent(event);
         if (event instanceof TraceActivatedPluginEvent) {
-            Msg.debug(this, "is TraceActivatedPluginEvent didMapping "+ didMapping);
+            Msg.debug(this, "is TraceActivatedPluginEvent didMapping "+ didMapping+" program "+program);
             getGDBExecuteMethod();
             getCurrentTrace();
+        } else if (event instanceof TraceSelectionPluginEvent) {
+            Msg.debug(this, "is TraceSelectionPluginEvent didMapping "+didMapping+" program "+program);
             if (connected()) {
-                Msg.debug(this, "is TraceActivatedPluginEvent");
+                Msg.debug(this, "is connected");
                 if(program == null){
                     program = getProgram();
                 }
-                if (!didMapping && impl != false) {
-                    doMapping();
-                    refreshClient(true);
+                if (!didMapping) {
+                    CompletableFuture<String> do_mapping = doMapping();
+                    do_mapping.thenRun(() -> {
+                        refreshClient(true);
+                    }).exceptionally(throwable -> {
+                       // Handle any exceptions from the async operations
+                       java.io.StringWriter sw = new java.io.StringWriter();
+                       java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+                       throwable.printStackTrace(pw);
+                       Msg.error(this, "Caught async error during doMapping/refreshclient:\n" + sw.toString());
+                       return null;
+                    });
                     getLoadOffset();
                 }
             }
-        } else if (event instanceof TraceSelectionPluginEvent) {
-            Msg.debug(this, "is TraceSelectionPluginEvent didMapping "+didMapping+" imp "+impl);
-            if (program == null) {
-                Msg.debug(this, "program is null, call getProgram");
-                program = getProgram();
-            }
-            if (!didMapping && impl != false) {
-                Msg.debug(this, "call doRest and doMapping");
-                // Do mapping as callback here, otherwise, mapping is attempted
-                // before ghidra debugger settles out.
-                doRest();
-                doMapping();
-                tool.getService(DebuggerListingService.class)
-                        .setTrackingSpec(PCByRegisterLocationTrackingSpec.INSTANCE);
-            }
-            // }else if(event instanceof TraceRecorderAdvancedPluginEvent) {
-            // Msg.debug(this, "is trace advanced event");
-            // refreshRegisters();
         } else if (event instanceof TraceClosedPluginEvent) {
             Msg.debug(this, "is trace closed event");
             // TBD until we know it is a trace we care about
@@ -1094,6 +1123,10 @@ public class RESimUtilsPlugin extends Plugin {
         TracePlatform platform = current.getPlatform();
         List<Register> regs = REG_NAMES.stream().map(platform.getLanguage()::getRegister).toList();
         TraceThread thread = current.getThread();
+        if(thread == null){
+            Msg.debug(this, "getThread got null");
+            return null; 
+        }
         int frame = current.getFrame(); 
 
         //if (forceRefresh) {
@@ -1106,7 +1139,7 @@ public class RESimUtilsPlugin extends Plugin {
         //}
         Msg.debug(this, "back from readRegisters");
         latest_register_frame = value_list;
-        //Msg.debug(this, "doReadCurrentFrame call to readCurrentFrame got "+latest_register_frame.toString());
+        Msg.debug(this, "readCurrentFrame got "+latest_register_frame.toString());
         return (RemoteAsyncResult) value_list;
     }
     protected List<RegisterValue> readRegisters(TracePlatform platform, TraceThread thread, int frame,
@@ -1180,6 +1213,7 @@ public class RESimUtilsPlugin extends Plugin {
     }
     public CompletableFuture<String> doRefresh() {
         /**
+        Refresh Ghidra view of register values
          */
         if (gdb_execute_method == null) {
             Msg.error(this, "gdb_execute_method is null");
@@ -1189,7 +1223,6 @@ public class RESimUtilsPlugin extends Plugin {
             RemoteAsyncResult async_result = null;
             String result = null;
 
-            //newRefreshRegisters();
             refreshFrameRegisters();
             //refreshMemory();
 
@@ -1206,36 +1239,6 @@ public class RESimUtilsPlugin extends Plugin {
         });
     }
 
-    public void newRefreshRegisters(){
-        // NOT USED
-        DebuggerTraceManagerService traceManager = tool.getService(DebuggerTraceManagerService.class);
-
-        DebuggerCoordinates current = traceManager.getCurrent();
-        Trace currentTrace = traceManager.getCurrentTrace();
-        Collection<? extends TraceThread> threads = currentTrace.getThreadManager().getAllThreads();
-        for (TraceThread currentThread : threads) {
-            Msg.debug(this,  "check thread "+currentThread.getName(0)+" path "+currentThread.getPath());
-            TraceObject threadObj = currentThread.getObject();
-        
-            // Format the thread name to match how it appears in the canonical path (e.g., "[1]")
-            String threadPathPart = "[" + currentThread.getName(0) + "]";
-        
-            // 3. Search the TraceObject stream for the exact schema the RMI method expects
-            Optional<? extends TraceObject> regNode = currentTrace.getObjectManager()
-                .getAllObjects()
-                .filter(obj -> "RegisterValueContainer".equals(obj.getSchema().getName().toString()))
-                //.filter(obj -> obj.getCanonicalPath().toString().contains(threadPathPart))
-                .findFirst();
-        
-            // 4. Invoke the method on the found node
-            if (regNode.isPresent()) {
-                Msg.debug(this, "regNode is present, name "+regNode.toString());
-                gdb_registers_refresh_method.invoke(Map.of("node", regNode.get()));
-            } else {
-                Msg.warn(this, "Could not find a RegisterValueContainer for thread " + currentThread.getName(0));
-            }
-        }
-    }
     public void refreshMemory(){
         // NOT USED
         DebuggerTraceManagerService traceManager = tool.getService(DebuggerTraceManagerService.class);
