@@ -444,7 +444,7 @@ public class RESimBookMarksProvider extends ComponentProviderAdapter implements 
         }
         if(resimUtils == null) {
             Msg.error(this,  "Cannot refresh, no RESimUtils");
-            return CompletableFuture.failedFuture(new IllegalStateException("resimUtils was null");
+            return CompletableFuture.failedFuture(new IllegalStateException("resimUtils was null"));
         }
 
         clear();
