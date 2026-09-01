@@ -38,10 +38,10 @@ version_string=$(cat $version_file)
 echo "new_tag is $new_tag version string is $version_string"
 if [[ "$new_tag" != "$version_string" ]]; then
     echo "versions do not match"
+    exit
 else
     echo "versions ok"
 fi
-exit
 git tag $new_tag || exit
 #git push --set-upstream origin master
 git push --tags
