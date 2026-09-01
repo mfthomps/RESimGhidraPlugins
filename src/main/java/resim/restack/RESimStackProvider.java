@@ -395,7 +395,7 @@ public class RESimStackProvider extends ComponentProviderAdapter implements RESi
         Msg.info(this,  "refresh");
         if(resimUtils == null) {
             Msg.error(this,  "refresh failed, resimUtilsis null");
-            return CompletableFuture.failedFuture(new IllegalStateException("resimUtils was null");
+            return CompletableFuture.failedFuture(new IllegalStateException("resimUtils was null"));
         }
         clear();
         String cmd = "getStackTrace()";
