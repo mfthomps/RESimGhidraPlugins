@@ -136,12 +136,14 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.NotFoundException;
 import ghidra.util.task.TaskMonitor;
+import resources.ResourceManager;
 
 import java.awt.Color;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.FileWriter;
@@ -1967,9 +1969,24 @@ public class RESimUtilsPlugin extends Plugin {
     }
 
     protected void about() {
-        JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), "RESim plugins version 0.5.5", "RESim version",
-                JOptionPane.INFORMATION_MESSAGE);
+        try (InputStream in = ResourceManager.getResourceAsStream("data/version.txt")) {
+            if (in == null) {
+                JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), 
+                    "Version file not found at data/version.txt.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+    
+            String version = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            String vstring = "RESim plugs version " + version.trim();
+    
+            JOptionPane.showMessageDialog(plugin.getTool().getActiveWindow(), vstring, "RESim version",
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+        } catch (IOException e) {
+            Msg.error(this, "Failed to read version file", e); 
+        }
     }
+
 
     private void runToSyscall() {
         String syscall = JOptionPane.showInputDialog(null, "Syscall number (-1 for any)", "-1");
