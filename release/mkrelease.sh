@@ -22,7 +22,6 @@ if [[ ! -d release ]]; then
     echo "Run it from the parent directory, e.g., ./release/mkrelease.sh"
     exit 
 fi
-git checkout master || exit
 dist_dir=~/neweclipse2/RESimPluginY/dist
 latest=$(ls -t $dist_dir | head -n 1)
 echo "Will release latest: $latest"
@@ -34,6 +33,15 @@ cp $full release/artifacts/
 new_tag=$1
 here=`pwd`
 
+version_file=$dist_dir/../src/main/resources/data/version.txt
+version_string=$(cat $version_file)
+echo "new_tag is $new_tag version string is $version_string"
+if [[ "$new_tag" != "$version_string" ]]; then
+    echo "versions do not match"
+else
+    echo "versions ok"
+fi
+exit
 git tag $new_tag || exit
 #git push --set-upstream origin master
 git push --tags
