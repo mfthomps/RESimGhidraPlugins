@@ -1391,13 +1391,17 @@ public class RESimUtilsPlugin extends Plugin {
         long orig_base = 0;
         try {
             orig_base = ElfLoader.getElfOriginalImageBase(program);
+            Msg.info(this, "orig image base from ElfLoader is " + Long.toHexString(orig_base)); 
         } catch (NullPointerException ex) {
             Msg.info(this, "Not elf, try pe");
             orig_base = getCoffOriginalImageBase();
         }
         long current_base = program.getImageBase().getOffset();
-        rebase(orig_base);
-        Msg.info(this, "orig image base " + orig_base + " current base " + current_base);
+        Msg.info(this, "orig image base " + Long.toHexString(orig_base) + " current base " + Long.toHexString(current_base));
+        if(current_base != orig_base){
+            rebase(orig_base);
+            Msg.info(this, "did rebase orig image base " + Long.toHexString(orig_base) + " current base " + Long.toHexString(current_base));
+        }
         File analysis_file = new File(ida_analysis + File.separator + less_image);
         Msg.info(this, "analysis_file "+analysis_file);
         String analysis_parent = analysis_file.getParent();
@@ -1415,7 +1419,9 @@ public class RESimUtilsPlugin extends Plugin {
         dumpExternals(outexternals);
         String outxrefs = analysis_file + ".arm_blr";
         dumpArmBlrXrefs(outxrefs);
-        rebase(current_base);
+        if(current_base != orig_base){
+            rebase(current_base);
+        } 
 
     }
 
