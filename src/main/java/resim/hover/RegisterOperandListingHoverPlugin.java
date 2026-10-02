@@ -18,6 +18,7 @@ package resim.hover;
 import ghidra.app.CorePluginPackage;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.core.codebrowser.hover.ListingHoverService;
+import ghidra.app.plugin.core.debug.DebuggerPluginPackage;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
 import resim.utils.RESimUtilsPlugin;
@@ -30,8 +31,8 @@ import resim.utils.RESimUtilsPlugin;
 //@formatter:off
 @PluginInfo(
 	status = PluginStatus.RELEASED,
-	packageName = CorePluginPackage.NAME,
-	category = PluginCategoryNames.CODE_VIEWER,
+        category = PluginCategoryNames.DEBUGGER, //
+        packageName = DebuggerPluginPackage.NAME, //
 	shortDescription = "Register Operand Hover",
 	description = "Pop-up display value of register operands.",
 	servicesProvided = { ListingHoverService.class,  RESimUtilsPlugin.class } 
