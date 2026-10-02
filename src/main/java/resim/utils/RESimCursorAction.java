@@ -91,6 +91,10 @@ public class RESimCursorAction extends ListingContextAction {
         Msg.debug(this, "actionPeformedX");
         Address entry = null;
         AddressSetView body = null;
+        if(context.toString().contains("Function Graph")){
+            Msg.debug(this, "actionPeformed is Function Graph");
+            line = false;
+        }
         if(!line){
             Msg.debug(this, "actionPeformed line false");
             ProgramLocation loc = context.getLocation();
@@ -107,13 +111,12 @@ public class RESimCursorAction extends ListingContextAction {
                 }
             }
         }else{
-            Msg.debug(this, "actionPeformed line true");
+            Msg.debug(this, "actionPerformed line true");
             if (context.hasSelection()) {
                 body = context.getSelection();
                 entry = body.getMinAddress();
-            }
-            else {
-                Msg.debug(this, "actionPeformed no selection context is "+context.toString());
+            } else {
+                Msg.debug(this, "actionrPeformed no selection context is "+context.toString());
                 entry = context.getAddress();
             }
         } 
@@ -125,9 +128,9 @@ public class RESimCursorAction extends ListingContextAction {
         /* here come the hacks */
         String full_cmd = this.cmd+"(0x"+Long.toHexString(addr)+")";
         if(this.cmd.equals("doBreak")){
-            full_cmd = this.cmd+"("+addr+",run=True)";
+            full_cmd = this.cmd+"(0x"+Long.toHexString(addr)+",run=True)";
         } else if(this.cmd.equals("revToAddr")){
-            full_cmd = this.cmd+"("+addr+",quiet=True)";
+            full_cmd = this.cmd+"(0x"+Long.toHexString(addr)+",quiet=True)";
         }
         Msg.debug(this, "In actionPerformed will do cmd: "+full_cmd);
         try {
