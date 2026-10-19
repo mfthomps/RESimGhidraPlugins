@@ -332,6 +332,9 @@ public class RESimUtilsPlugin extends Plugin {
         } catch (Exception e){
             Msg.debug(this, "error getting address, return zero");
         }
+        if(retval == null){
+            Msg.error(this, "got null address for hexOffset "+hexOffset);
+        }
         return retval;
     }
 
@@ -1358,15 +1361,17 @@ public class RESimUtilsPlugin extends Plugin {
     protected void rebase(long offset) {
         Msg.info(this, "do rebase offset "+Long.toHexString(offset));
         Address base_addr = this.addr(offset);
-        int t = program.startTransaction("rebase");
+        if(base_addr != null){
+            int t = program.startTransaction("rebase");
 
-        try {
-            program.setImageBase(base_addr, false);
-        } catch (AddressOverflowException | LockException | IllegalStateException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
+            try {
+                program.setImageBase(base_addr, false);
+            } catch (AddressOverflowException | LockException | IllegalStateException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+            }
+            program.endTransaction(t, true);
         }
-        program.endTransaction(t, true);
 
     }
 
