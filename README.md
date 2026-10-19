@@ -53,5 +53,6 @@ target image, the hostname of where Simics is running and port 9123.  Use the "r
 
 ## Development
 The Ghidra Dev Eclipse plugin is used for development.  Use that to create a new module (importing works, but then fails on 
-exporting of the plugin.)  Then manually create a symlink from the eclipse workspace project src/main/java/resim to
-the RESimGhidraPlugins/src/main/java/resim.  Do the same for the src/main/resources/images/re* files. 
+exporting of the plugin.)  Use the dev/link_res.sh to create a symlink from the eclipse workspace project src/main/java/resim to
+the RESimGhidraPlugins/src/main/java/resim,  and the src/main/resources/images/re* files. 
+Create a "version.txt" file in src/main/resources of your eclipse and use that to define the version string shown in "about".
